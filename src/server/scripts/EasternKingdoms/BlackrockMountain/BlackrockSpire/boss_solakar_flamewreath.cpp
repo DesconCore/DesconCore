@@ -241,8 +241,29 @@ public:
     }
 };
 
+class spell_hatch_rookery_egg : public SpellScript
+{
+    PrepareSpellScript(spell_hatch_rookery_egg);
+
+    SpellCastResult CheckCast()
+    {
+        if (GameObject* rookery = GetCaster()->FindNearestGameObject(GO_ROOKERY_EGG, RANGE_SPELL_HATCH_EGG, true))
+        {
+            if (rookery->GetGoState() != GO_STATE_ACTIVE_ALTERNATIVE)
+                return SPELL_CAST_OK;
+        }
+        return SPELL_FAILED_BAD_TARGETS;
+    }
+
+    void Register() override
+    {
+        OnCheckCast += SpellCheckCastFn(spell_hatch_rookery_egg::CheckCast);
+    }
+};
+
 void AddSC_boss_solakar_flamewreath()
 {
     new boss_solakar_flamewreath();
     new npc_rookery_hatcher();
+    RegisterSpellScript(spell_hatch_rookery_egg);
 }

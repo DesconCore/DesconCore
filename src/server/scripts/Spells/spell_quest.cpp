@@ -2418,10 +2418,10 @@ class spell_q4735_collect_rookery_egg : public SpellScript
     {
         if (GameObject* rookery = GetCaster()->FindNearestGameObject(GO_ROOKERY_EGG, 5.0f, true))
         {
-            if (rookery->GetGoState() != GO_STATE_ACTIVE_ALTERNATIVE)
-                return SPELL_FAILED_BAD_TARGETS;
+            if (rookery->GetGoState() == GO_STATE_ACTIVE_ALTERNATIVE)
+                return SPELL_CAST_OK;
         }
-        return SPELL_CAST_OK;
+        return SPELL_FAILED_BAD_TARGETS;
     }
 
     SpellCastResult CheckQuest()
