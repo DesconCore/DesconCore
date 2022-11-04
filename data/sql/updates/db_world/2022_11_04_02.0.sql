@@ -1,3 +1,4 @@
+-- DB update 2022_11_04_01 -> 2022_11_04_02_0
 --
 DELETE FROM `spell_script_names` WHERE `ScriptName`='spell_hatch_rookery_egg';
 INSERT INTO `spell_script_names` (`spell_id`,`ScriptName`) VALUES
