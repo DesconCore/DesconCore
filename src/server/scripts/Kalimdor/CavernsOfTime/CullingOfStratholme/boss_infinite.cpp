@@ -18,6 +18,8 @@
 #include "ScriptMgr.h"
 #include "ScriptedCreature.h"
 #include "culling_of_stratholme.h"
+#include "InstanceScript.h"
+#include "MotionMaster.h"
 
 enum Spells
 {
@@ -25,12 +27,15 @@ enum Spells
     SPELL_VOID_STRIKE                           = 60590,
     SPELL_CORRUPTION_OF_TIME_AURA               = 60451,
     SPELL_CORRUPTION_OF_TIME_CHANNEL            = 60422,
+    SPELL_CHANNEL_VISUAL                        = 31387
 };
 
 enum Events
 {
     EVENT_SPELL_CORRUPTING_BLIGHT               = 1,
     EVENT_SPELL_VOID_STRIKE                     = 2,
+    EVENT_SPELL_CHANNEL_VISUAL                  = 3,
+    EVENT_SPELL_CORRUPTION_OF_TIME_CHANNEL      = 4
 };
 
 enum Yells
@@ -40,127 +45,162 @@ enum Yells
     SAY_FAIL                                    = 2
 };
 
-class boss_infinite_corruptor : public CreatureScript
+enum Misc
 {
-public:
-    boss_infinite_corruptor() : CreatureScript("boss_infinite_corruptor") { }
+    SAY_SUCCESS                                 = 0,
 
-    CreatureAI* GetAI(Creature* creature) const override
+    MOVEMENT_TIME_RIFT                          = 1
+};
+
+struct boss_infinite_corruptor : public BossAI
+{
+    boss_infinite_corruptor(Creature* creature) : BossAI(creature, DATA_SHOW_INFINITE_TIMER)
     {
-        return GetCullingOfStratholmeAI<boss_infinite_corruptorAI>(creature);
+        events.ScheduleEvent(EVENT_SPELL_CHANNEL_VISUAL, 0s);
     }
 
-    struct boss_infinite_corruptorAI : public ScriptedAI
+    uint32 beamTimer;
+    ObjectGuid TimeRiftGUID;
+    ObjectGuid GuardianGUID;
+
+    void Reset() override
     {
-        boss_infinite_corruptorAI(Creature* c) : ScriptedAI(c), summons(me)
+        _Reset();
+
+        if (getTimeRift() && getGuardian())
         {
+            getTimeRift()->DespawnOrUnsummon();
+            getGuardian()->DespawnOrUnsummon();
         }
 
-        EventMap events;
-        SummonList summons;
-        uint32 beamTimer;
+        if (instance->GetData(DATA_GUARDIANTIME_EVENT) == NOT_STARTED)
+            me->DespawnOrUnsummon(5ms, 0s);
 
-        void Reset() override
+        if (Creature* TimeRift = me->SummonCreature(NPC_TIME_RIFT, 2337.6f, 1270.0f, 132.95f, 2.79f))
+            TimeRiftGUID = TimeRift->GetGUID();
+
+        if (Creature* Guardian = me->SummonCreature(NPC_GUARDIAN_OF_TIME, 2319.3f, 1267.7f, 132.8f, 1.0f))
+            GuardianGUID = Guardian->GetGUID();
+
+        beamTimer = 1;
+    }
+
+    void SpellHitTarget(Unit* target, SpellInfo const* spellInfo) override
+    {
+        if (spellInfo->Id == SPELL_CORRUPTION_OF_TIME_CHANNEL)
+            target->CastSpell(target, SPELL_CORRUPTION_OF_TIME_AURA, true);
+    }
+
+    void EnterCombat(Unit* who) override
+    {
+        BossAI::EnterCombat(who);
+        me->InterruptNonMeleeSpells(false);
+        events.ScheduleEvent(EVENT_SPELL_VOID_STRIKE, 8s);
+        events.ScheduleEvent(EVENT_SPELL_CORRUPTING_BLIGHT, 12s);
+        Talk(SAY_AGGRO);
+    }
+
+    void EnterEvadeMode(EvadeReason why) override
+    {
+        if (me->HasReactState(REACT_PASSIVE))
+            return;
+        BossAI::EnterEvadeMode(why);
+    }
+
+    void JustDied(Unit* killer) override
+    {
+        Talk(SAY_DEATH);
+
+        if (getGuardian() && getTimeRift())
         {
-            events.Reset();
-            summons.DespawnAll();
-            if (InstanceScript* pInstance = me->GetInstanceScript())
-                if (pInstance->GetData(DATA_GUARDIANTIME_EVENT) == 0)
-                    me->DespawnOrUnsummon(500);
-
-            me->SummonCreature(NPC_TIME_RIFT, 2337.6f, 1270.0f, 132.95f, 2.79f);
-            me->SummonCreature(NPC_GUARDIAN_OF_TIME, 2319.3f, 1267.7f, 132.8f, 1.0f);
-            beamTimer = 1;
+            getGuardian()->SetFacingToObject(killer);
+            getGuardian()->DespawnOrUnsummon(15s, 0s);
+            getGuardian()->RemoveAllAuras();
+            getGuardian()->AI()->Talk(SAY_SUCCESS);
+            getTimeRift()->DespawnOrUnsummon(1s, 0s);
         }
 
-        void JustSummoned(Creature* cr) override { summons.Summon(cr); }
+        instance->SetData(DATA_SHOW_INFINITE_TIMER, NOT_STARTED);
+        instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_CORRUPTING_BLIGHT);
+    }
 
-        void EnterCombat(Unit* /*who*/) override
+    void MovementInform(uint32 type, uint32 id) override
+    {
+        if (type == POINT_MOTION_TYPE && id == MOVEMENT_TIME_RIFT)
         {
+            me->DespawnOrUnsummon(5s, 0s);
+            instance->SetBossState(DATA_SHOW_INFINITE_TIMER, FAIL);
+        }
+    }
+
+    void DoAction(int32 param) override
+    {
+        if (!me->IsAlive())
+            return;
+
+        if (param == ACTION_RUN_OUT_OF_TIME)
+        {
+            Talk(SAY_FAIL);
+
+            if (getTimeRift() && getGuardian())
+            {
+                getGuardian()->DespawnOrUnsummon();
+                getTimeRift()->DespawnOrUnsummon(8s, 0s);
+
+                if (me->IsWithinDist2d(getTimeRift(), 5.0f))
+                    MovementInform(POINT_MOTION_TYPE, MOVEMENT_TIME_RIFT);
+                else
+                    me->GetMotionMaster()->MovePoint(MOVEMENT_TIME_RIFT, getTimeRift()->GetPosition()); // @todo offset
+            }
+            else
+                MovementInform(POINT_MOTION_TYPE, MOVEMENT_TIME_RIFT);
+        }
+    }
+
+    Creature* getTimeRift() { return ObjectAccessor::GetCreature(*me, TimeRiftGUID); }
+    Creature* getGuardian() { return ObjectAccessor::GetCreature(*me, GuardianGUID); }
+
+    void UpdateAI(uint32 diff) override
+    {
+        if (beamTimer)
+        {
+            beamTimer += diff;
+            if (beamTimer >= 2000)
+            {
+                me->CastSpell(me, SPELL_CORRUPTION_OF_TIME_CHANNEL, true);
+                beamTimer = 0;
+            }
+        }
+
+        if (UpdateVictim())
+        {
+            // Spell Channel Visual
             me->InterruptNonMeleeSpells(false);
-            events.ScheduleEvent(EVENT_SPELL_VOID_STRIKE, 8000);
-            events.ScheduleEvent(EVENT_SPELL_CORRUPTING_BLIGHT, 12000);
-            Talk(SAY_AGGRO);
-        }
-
-        void JustDied(Unit* /*killer*/) override
-        {
-            Talk(SAY_DEATH);
-            for (SummonList::const_iterator itr = summons.begin(); itr != summons.end(); ++itr)
-            {
-                if (Creature* cr = ObjectAccessor::GetCreature(*me, (*itr)))
-                {
-                    if (cr->GetEntry() == NPC_TIME_RIFT)
-                    {
-                        cr->DespawnOrUnsummon(1000);
-                    }
-                    else
-                    {
-                        cr->DespawnOrUnsummon(5000);
-                        cr->RemoveAllAuras();
-                        cr->Say("You have my thanks for saving my existence in this timeline. Now i must report back to my superiors. They must know immediately of what i just experienced.", LANG_UNIVERSAL);
-                    }
-                }
-            }
-
-            if (InstanceScript* pInstance = me->GetInstanceScript())
-            {
-                pInstance->SetData(DATA_SHOW_INFINITE_TIMER, 0);
-                pInstance->DoRemoveAurasDueToSpellOnPlayers(SPELL_CORRUPTING_BLIGHT);
-            }
-        }
-
-        void DoAction(int32 param) override
-        {
-            if (!me->IsAlive())
-                return;
-
-            if (param == ACTION_RUN_OUT_OF_TIME)
-            {
-                Talk(SAY_FAIL);
-                summons.DespawnAll();
-                me->DespawnOrUnsummon(500);
-            }
-        }
-
-        void UpdateAI(uint32 diff) override
-        {
-            if (beamTimer)
-            {
-                beamTimer += diff;
-                if (beamTimer >= 2000)
-                {
-                    me->CastSpell(me, SPELL_CORRUPTION_OF_TIME_CHANNEL, true);
-                    beamTimer = 0;
-                }
-            }
-
-            if (!UpdateVictim())
-                return;
-
-            events.Update(diff);
-            if (me->HasUnitState(UNIT_STATE_CASTING))
-                return;
-
-            switch (events.ExecuteEvent())
-            {
-                case EVENT_SPELL_VOID_STRIKE:
-                    me->CastSpell(me->GetVictim(), SPELL_VOID_STRIKE, false);
-                    events.RepeatEvent(8000);
-                    break;
-                case EVENT_SPELL_CORRUPTING_BLIGHT:
-                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 50.0f, true))
-                        me->CastSpell(target, SPELL_CORRUPTING_BLIGHT, false);
-                    events.RepeatEvent(12000);
-                    break;
-            }
-
             DoMeleeAttackIfReady();
         }
-    };
+
+        events.Update(diff);
+
+        switch (events.ExecuteEvent())
+        {
+            case EVENT_SPELL_VOID_STRIKE:
+                DoCastVictim(SPELL_VOID_STRIKE);
+                events.RepeatEvent(8000);
+                break;
+            case EVENT_SPELL_CORRUPTING_BLIGHT:
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 50.0f, true))
+                    DoCast(target, SPELL_CORRUPTING_BLIGHT);
+                events.RepeatEvent(12000);
+                break;
+            case EVENT_SPELL_CHANNEL_VISUAL:
+                if (getGuardian())
+                    me->CastSpell(getGuardian(), SPELL_CHANNEL_VISUAL, true);
+                break;
+        }
+    }
 };
 
 void AddSC_boss_infinite_corruptor()
 {
-    new boss_infinite_corruptor();
+    RegisterCullingOfStratholmeCreatureAI(boss_infinite_corruptor);
 }

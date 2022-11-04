@@ -191,4 +191,6 @@ inline AI* GetCullingOfStratholmeAI(T* obj)
     return GetInstanceAI<AI>(obj, CullingOfStratholmeScriptName);
 }
 
-#endif
+#define RegisterCullingOfStratholmeCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetCullingOfStratholmeAI)
+
+#endif // DEF_CULLING_OF_STRATHOLME_H
