@@ -4594,6 +4594,31 @@ class spell_gen_basic_campfire : public SpellScript
     }
 };
 
+class spell_gen_purge_vehicle_control : public SpellScript
+{
+    PrepareSpellScript(spell_gen_purge_vehicle_control);
+
+    void HandleScriptEffect(SpellEffIndex /*effIndex*/)
+    {
+        if (Unit* vehicle = GetCaster()->GetVehicleBase())
+        {
+            auto& auraArea = vehicle->GetAppliedAuras();
+            for (auto iter = auraArea.begin(); iter != auraArea.end();)
+            {
+                if (iter->second->IsPositive())
+                    vehicle->RemoveAura(iter);
+                else
+                    ++iter;
+            }
+        }
+    }
+
+    void Register() override
+    {
+        OnEffectHit += SpellEffectFn(spell_gen_purge_vehicle_control::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+    }
+};
+
 void AddSC_generic_spell_scripts()
 {
     RegisterSpellScript(spell_silithyst);
@@ -4732,4 +4757,5 @@ void AddSC_generic_spell_scripts()
     RegisterSpellScriptWithArgs(spell_gen_apply_aura_after_expiration, "spell_itch_aq20", SPELL_HIVEZARA_CATALYST, EFFECT_0, SPELL_AURA_DUMMY);
     RegisterSpellScriptWithArgs(spell_gen_apply_aura_after_expiration, "spell_itch_aq40", SPELL_VEKNISS_CATALYST, EFFECT_0, SPELL_AURA_DUMMY);
     RegisterSpellScript(spell_gen_basic_campfire);
+    RegisterSpellScript(spell_gen_purge_vehicle_control);
 }
