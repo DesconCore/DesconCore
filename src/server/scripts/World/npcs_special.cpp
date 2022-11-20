@@ -2622,6 +2622,33 @@ public:
     }
 };
 
+enum kilroggSpell
+{
+    SPELL_GLYPH_OF_KILROGG                       = 58081,
+    SPELL_EYE_OF_KILROGG_PASSIVE                 = 58083,
+    SPELL_TRIGGER_EYE_OF_KILROGG_PASSIVE         = 2585
+};
+
+struct npc_eye_of_kilrogg : public ScriptedAI
+{
+public:
+    npc_eye_of_kilrogg(Creature* creature) : ScriptedAI(creature) { }
+
+    void Reset() override
+    {
+        if (Unit* owner = me->GetOwner())
+        {
+            if (owner->HasAura(SPELL_GLYPH_OF_KILROGG))
+            {
+                if (me->GetMapId() == 530 || me->GetMapId() == 571)
+                    me->AddAura(SPELL_EYE_OF_KILROGG_PASSIVE, me);
+
+                me->CastSpell(me, SPELL_TRIGGER_EYE_OF_KILROGG_PASSIVE, true);
+            }
+        }
+    }
+};
+
 void AddSC_npcs_special()
 {
     // Ours
@@ -2649,4 +2676,5 @@ void AddSC_npcs_special()
     new npc_spring_rabbit();
     new npc_stable_master();
     RegisterCreatureAI(npc_arcanite_dragonling);
+    RegisterCreatureAI(npc_eye_of_kilrogg);
 }

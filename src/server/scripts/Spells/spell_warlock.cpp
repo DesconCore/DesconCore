@@ -72,49 +72,6 @@ enum WarlockSpellIcons
     WARLOCK_ICON_ID_MANA_FEED                       = 1982
 };
 
-class spell_warl_eye_of_kilrogg : public AuraScript
-{
-    PrepareAuraScript(spell_warl_eye_of_kilrogg);
-
-    void HandleAuraApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-    {
-        PreventDefaultAction();
-        if (Player* player = GetTarget()->ToPlayer())
-        {
-            player->UnsummonPetTemporaryIfAny();
-
-            // Glyph of Kilrogg
-            if (player->HasAura(58081))
-            {
-                if (Unit* charm = player->GetCharm())
-                {
-                    if (charm->GetMapId() == 530 || charm->GetMapId() == 571)
-                    {
-                        charm->CastSpell(charm, SPELL_WARLOCK_EYE_OF_KILROGG_FLY, true);
-                    }
-                }
-            }
-        }
-    }
-
-    void HandleAuraRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-    {
-        if (Player* player = GetTarget()->ToPlayer())
-        {
-            if (Unit* charm = player->GetCharm())
-                charm->ToTempSummon()->UnSummon();
-
-            player->ResummonPetTemporaryUnSummonedIfAny();
-        }
-    }
-
-    void Register() override
-    {
-        OnEffectApply += AuraEffectApplyFn(spell_warl_eye_of_kilrogg::HandleAuraApply, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
-        AfterEffectRemove += AuraEffectRemoveFn(spell_warl_eye_of_kilrogg::HandleAuraRemove, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
-    }
-};
-
 class spell_warl_shadowflame : public SpellScript
 {
     PrepareSpellScript(spell_warl_shadowflame);
@@ -1271,7 +1228,6 @@ class spell_warl_glyph_of_felguard : public AuraScript
 
 void AddSC_warlock_spell_scripts()
 {
-    RegisterSpellScript(spell_warl_eye_of_kilrogg);
     RegisterSpellScript(spell_warl_shadowflame);
     RegisterSpellScript(spell_warl_seduction);
     RegisterSpellScript(spell_warl_improved_demonic_tactics);
