@@ -973,7 +973,12 @@ class spell_q6124_6129_apply_salve : public SpellScript
                 }
                 if (newEntry)
                 {
+                    Position pos = creatureTarget->GetRandomNearPosition(120);
+                    creatureTarget->GetMotionMaster()->MovePoint(0, pos);
                     creatureTarget->UpdateEntry(newEntry);
+                    creatureTarget->GetMotionMaster()->Clear(false);
+                    creatureTarget->SetSpeedRate(MOVE_RUN, 0.5f);
+                    creatureTarget->SetUnitFlag(UNIT_FLAG_NOT_ATTACKABLE_1);
                     creatureTarget->DespawnOrUnsummon(DESPAWN_TIME);
                     caster->KilledMonsterCredit(newEntry);
                 }
