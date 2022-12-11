@@ -274,7 +274,7 @@ struct boss_eye_of_cthun : public BossAI
                 task.SetGroup(GROUP_BEAM_PHASE);
                 task.Repeat();
             })
-            .Schedule(50s, [this](TaskContext /*task*/)
+            .Schedule(46s, [this](TaskContext /*task*/)
             {
                 _scheduler.CancelGroup(GROUP_BEAM_PHASE);
 
@@ -449,9 +449,13 @@ struct boss_cthun : public BossAI
 
                 target->m_Events.AddEventAtOffset([target, this]()
                 {
-                    DoCast(target, SPELL_DIGESTIVE_ACID, true);
                     DoTeleportPlayer(target, STOMACH_X, STOMACH_Y, STOMACH_Z, STOMACH_O);
                     target->RemoveAurasDueToSpell(SPELL_MIND_FLAY);
+
+                    target->m_Events.AddEventAtOffset([target, this]()
+                    {
+                        DoCast(target, SPELL_DIGESTIVE_ACID, true);
+                    }, 2s);
                 }, 3800ms);
             }
 
