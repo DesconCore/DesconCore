@@ -2074,6 +2074,46 @@ public:
     }
 };
 
+// http://www.wowhead.com/quest=11730 Master and Servant
+enum robots
+{
+    SAY_START = 0
+};
+
+struct npcs_004a8_57k_66d_005b6_55d : public CreatureAI
+{
+public:
+    npcs_004a8_57k_66d_005b6_55d(Creature* creature) : CreatureAI(creature) { }
+
+    void Reset() override
+    {
+        me->SetReactState(REACT_DEFENSIVE);
+        me->SetPvP(true);
+    }
+
+    void IsSummonedBy(Unit* /*summoner*/) override
+    {
+        Talk(SAY_START);
+    }
+
+    void EnterCombat(Unit* who) override
+    {
+        if (me->IsValidAttackTarget(who))
+        {
+            AttackStart(who);
+        }
+    }
+
+    void UpdateAI(uint32 /*diff*/) override
+    {
+        if (!UpdateVictim())
+            return;
+
+        DoMeleeAttackIfReady();
+    }
+};
+
+
 void AddSC_borean_tundra()
 {
     // Ours
@@ -2100,4 +2140,5 @@ void AddSC_borean_tundra()
     new npc_hidden_cultist();
     new spell_q11719_bloodspore_ruination_45997();
     new npc_bloodmage_laurith();
+    RegisterCreatureAI(npcs_004a8_57k_66d_005b6_55d);
 }

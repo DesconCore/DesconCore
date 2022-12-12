@@ -1200,7 +1200,7 @@ class spell_q11730_ultrasonic_screwdriver : public SpellScript
             }
             caster->CastSpell(caster, spellId, true, castItem);
             caster->CastSpell(caster, SPELL_ROBOT_KILL_CREDIT, true);
-            target->DespawnOrUnsummon();
+            target->DespawnOrUnsummon(3s, 0s);
         }
     }
 
