@@ -2113,6 +2113,41 @@ public:
     }
 };
 
+struct npc_winterfin_first_responder : public CreatureAI
+{
+public:
+    npc_winterfin_first_responder(Creature* creature) : CreatureAI(creature) { }
+
+    void Reset() override
+    {
+        me->SetReactState(REACT_DEFENSIVE);
+        me->SetPvP(true);
+    }
+
+    void EnterCombat(Unit* who) override
+    {
+        if (me->IsValidAttackTarget(who))
+        {
+            AttackStart(who);
+        }
+    }
+
+    void MoveInLineOfSight(Unit* who) override
+    {
+        if (me->IsWithinDist(who, 10) && !me->IsInCombat() && me->IsValidAttackTarget(who))
+        {
+            AttackStart(who);
+        }
+    }
+
+    void UpdateAI(uint32 /*diff*/) override
+    {
+        if (!UpdateVictim())
+            return;
+
+        DoMeleeAttackIfReady();
+    }
+};
 
 void AddSC_borean_tundra()
 {
@@ -2141,4 +2176,5 @@ void AddSC_borean_tundra()
     new spell_q11719_bloodspore_ruination_45997();
     new npc_bloodmage_laurith();
     RegisterCreatureAI(npcs_004a8_57k_66d_005b6_55d);
+    RegisterCreatureAI(npc_winterfin_first_responder);
 }
