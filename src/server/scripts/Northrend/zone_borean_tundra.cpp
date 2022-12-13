@@ -2112,6 +2112,7 @@ public:
         DoMeleeAttackIfReady();
     }
 };
+
 enum Winterfin
 {
     SPELL_CLEAVE = 40504,
