@@ -2112,6 +2112,12 @@ public:
         DoMeleeAttackIfReady();
     }
 };
+enum Winterfin
+{
+    SPELL_CLEAVE = 40504,
+
+    EVENT_CLEAVE = 1
+};
 
 struct npc_winterfin_first_responder : public CreatureAI
 {
@@ -2126,6 +2132,8 @@ public:
 
     void EnterCombat(Unit* who) override
     {
+        events.ScheduleEvent(EVENT_CLEAVE, 5s);
+
         if (me->IsValidAttackTarget(who))
         {
             AttackStart(who);
@@ -2140,10 +2148,20 @@ public:
         }
     }
 
-    void UpdateAI(uint32 /*diff*/) override
+    void UpdateAI(uint32 diff) override
     {
         if (!UpdateVictim())
             return;
+
+        events.Update(diff);
+
+        switch (events.ExecuteEvent())
+        {
+            case EVENT_CLEAVE:
+                DoCastVictim(SPELL_CLEAVE);
+                events.ScheduleEvent(EVENT_CLEAVE, 10s);
+                break;
+        }
 
         DoMeleeAttackIfReady();
     }
