@@ -2258,6 +2258,86 @@ public:
     }
 };
 
+enum Warhorese
+{
+    
+    
+
+    NPC_ONSLAUGHT_WARHORSE        = 27213,
+    NPC_ONSLAUGHT_KNIGHT          = 27206
+};
+
+struct npc_onslaught_warhorse : public VehicleAI
+{
+    npc_onslaught_warhorse(Creature* creature) : VehicleAI(creature) { }
+
+    //ObjectGuid OnslaughtGUID;
+
+    void InitializeAI() override
+    {
+        //if (Creature* Onslaught = me->SummonCreature(NPC_ONSLAUGHT_KNIGHT, me->GetPositionX(), me->GetPositionY(), me->GetPositionZ()))
+            //OnslaughtGUID = Onslaught->GetGUID();
+    }
+
+    void PassengerBoarded(Unit* passenger, int8 /*seatId*/, bool apply) override
+    {
+        if (apply && passenger->GetTypeId() == TYPEID_PLAYER)
+        {
+            me->SetReactState(REACT_PASSIVE);
+            me->SetImmuneToNPC(true);
+            me->DespawnOrUnsummon(240 * IN_MILLISECONDS);
+        }
+    }
+
+    //Creature* getOnslaught() { return ObjectAccessor::GetCreature(*me, OnslaughtGUID); }
+
+    void UpdateAI(uint32 /*diff*/) override
+    {
+        if (!UpdateVictim())
+            return;
+
+        DoMeleeAttackIfReady();
+    }
+};
+
+enum OnslaughtGryphon
+{
+    //SPELL_HAND_OVER_REINS = 48297,
+    SPELL_ONSLAUGHT_RIDING_CROP = 48290,
+
+    SEAT_PLAYER            = 0
+};
+
+class spell_hand_over_reins : public SpellScript
+{
+    PrepareSpellScript(spell_hand_over_reins);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({SPELL_ONSLAUGHT_RIDING_CROP});
+    }
+
+    void HandleScriptEffect(SpellEffIndex /*effIndex*/)
+    {
+        if (Unit* caster = GetCaster())
+        {
+            if (Vehicle* warhorse = caster->GetVehicleKit())
+            {
+                if (Unit* player = warhorse->GetPassenger(SEAT_PLAYER))
+                {
+                    player->ExitVehicle();
+                    player->RemoveAurasDueToSpell(SPELL_ONSLAUGHT_RIDING_CROP);
+                }
+            }
+        }
+    }
+
+    void Register() override
+    {
+        OnEffectHitTarget += SpellEffectFn(spell_hand_over_reins::HandleScriptEffect, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
+    }
+};
+
 void AddSC_dragonblight()
 {
     // Ours
@@ -2287,4 +2367,6 @@ void AddSC_dragonblight()
     new spell_q12096_q12092_dummy();
     new spell_q12096_q12092_bark();
     new npc_torturer_lecraft();
+    RegisterCreatureAI(npc_onslaught_warhorse);
+    RegisterSpellScript(spell_hand_over_reins);
 }
