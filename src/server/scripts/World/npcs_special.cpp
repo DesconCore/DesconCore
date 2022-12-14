@@ -2649,6 +2649,44 @@ public:
     }
 };
 
+struct npc_summoned_by_item : public CreatureAI
+{
+public:
+    npc_summoned_by_item(Creature* creature) : CreatureAI(creature) { }
+
+    void Reset() override
+    {
+        me->SetReactState(REACT_DEFENSIVE);
+        me->SetPvP(true);
+    }
+
+    void EnterCombat(Unit* who) override
+    {
+        if (me->IsValidAttackTarget(who))
+        {
+            AttackStart(who);
+        }
+    }
+
+    void IsSummonedBy(Unit* /*summoner*/) override
+    {
+        AttackStart(me->SelectVictim());
+    }
+
+    void OwnerAttacked(Unit* target) override
+    {
+        AttackStart(target);
+    }
+
+    void UpdateAI(uint32 /*diff*/) override
+    {
+        if (!UpdateVictim())
+            return;
+
+        DoMeleeAttackIfReady();
+    }
+};
+
 void AddSC_npcs_special()
 {
     // Ours
@@ -2677,4 +2715,5 @@ void AddSC_npcs_special()
     new npc_stable_master();
     RegisterCreatureAI(npc_arcanite_dragonling);
     RegisterCreatureAI(npc_eye_of_kilrogg);
+    RegisterCreatureAI(npc_summoned_by_item);
 }

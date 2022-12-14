@@ -2141,12 +2141,14 @@ public:
         }
     }
 
-    void MoveInLineOfSight(Unit* who) override
+    void IsSummonedBy(Unit* /*summoner*/) override
     {
-        if (me->IsWithinDist(who, 10) && me->IsInCombat() && me->IsValidAttackTarget(who))
-        {
-            AttackStart(who);
-        }
+        AttackStart(me->SelectVictim());
+    }
+
+    void OwnerAttacked(Unit* target) override
+    {
+        AttackStart(target);
     }
 
     void UpdateAI(uint32 diff) override
