@@ -2453,6 +2453,31 @@ class spell_q4735_collect_rookery_egg : public SpellScript
     }
 };
 
+enum VeilSkith
+{
+    QUEST_DARKSTONE_OF_TEROKK = 10839
+};
+
+class spell_q10839_rod_of_purification : public SpellScript
+{
+    PrepareSpellScript(spell_q10839_rod_of_purification);
+
+    SpellCastResult CheckQuest()
+    {
+        if (Player* playerCaster = GetCaster()->ToPlayer())
+        {
+            if (playerCaster->GetQuestStatus(QUEST_DARKSTONE_OF_TEROKK) == QUEST_STATUS_INCOMPLETE)
+                return SPELL_CAST_OK;
+        }
+        return SPELL_FAILED_DONT_REPORT;
+    }
+
+    void Register() override
+    {
+        OnCheckCast += SpellCheckCastFn(spell_q10839_rod_of_purification::CheckQuest);
+    }
+};
+
 void AddSC_quest_spell_scripts()
 {
     RegisterSpellAndAuraScriptPair(spell_q11065_wrangle_some_aether_rays, spell_q11065_wrangle_some_aether_rays_aura);
@@ -2524,4 +2549,5 @@ void AddSC_quest_spell_scripts()
     RegisterSpellScript(spell_q12919_gymers_throw);
     RegisterSpellScript(spell_q5056_summon_shy_rotam);
     RegisterSpellScript(spell_q4735_collect_rookery_egg);
+    RegisterSpellScript(spell_q10839_rod_of_purification);
 }
