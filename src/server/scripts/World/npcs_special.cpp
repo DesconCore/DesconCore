@@ -2676,7 +2676,7 @@ public:
         }
     }
 
-    void IsSummonedBy(Unit* /*summoner*/) override
+    void IsSummonedBy(WorldObject* /*summoner*/) override
     {
         AttackStart(me->SelectVictim());
     }

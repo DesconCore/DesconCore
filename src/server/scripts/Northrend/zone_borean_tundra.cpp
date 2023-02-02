@@ -2091,7 +2091,7 @@ public:
         me->SetPvP(true);
     }
 
-    void IsSummonedBy(Unit* /*summoner*/) override
+    void IsSummonedBy(WorldObject* /*summoner*/) override
     {
         Talk(SAY_START);
     }
@@ -2141,7 +2141,7 @@ public:
         }
     }
 
-    void IsSummonedBy(Unit* /*summoner*/) override
+    void IsSummonedBy(WorldObject* /*summoner*/) override
     {
         AttackStart(me->SelectVictim());
     }
