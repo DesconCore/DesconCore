@@ -148,6 +148,12 @@ struct boss_rend_blackhand : public BossAI
         {
             me->DespawnOrUnsummon();
             return;
+
+            if (!summons.IsAnyCreatureAlive())
+            {
+                events.ScheduleEvent(EVENT_WAVES_TEXT_1 + _currentWave, 10s);
+            }
+
         }
 
         summon->AI()->DoZoneInCombat(nullptr, 100.0f);
@@ -156,9 +162,9 @@ struct boss_rend_blackhand : public BossAI
     void EnterCombat(Unit* /*who*/) override
     {
         _EnterCombat();
-        events.ScheduleEvent(EVENT_WHIRLWIND,     urand(13000, 15000));
-        events.ScheduleEvent(EVENT_CLEAVE,        urand(15000, 17000));
-        events.ScheduleEvent(EVENT_MORTAL_STRIKE, urand(17000, 19000));
+        events.ScheduleEvent(EVENT_WHIRLWIND, 13s, 15s);
+        events.ScheduleEvent(EVENT_CLEAVE, 15s, 17s);
+        events.ScheduleEvent(EVENT_MORTAL_STRIKE, 17s, 19s);
     }
 
     void EnterEvadeMode(EvadeReason why) override
@@ -217,7 +223,7 @@ struct boss_rend_blackhand : public BossAI
                 if (GameObject* portcullis = me->FindNearestGameObject(GO_DR_PORTCULLIS, 50.0f))
                     waveDoorGUID = portcullis->GetGUID();
 
-                events.ScheduleEvent(EVENT_TURN_TO_PLAYER, 0s);
+                events.ScheduleEvent(EVENT_TURN_TO_PLAYER, 0);
                 events.ScheduleEvent(EVENT_START_1, 1s);
             }
         }
@@ -395,15 +401,15 @@ struct boss_rend_blackhand : public BossAI
             {
                 case EVENT_WHIRLWIND:
                     DoCast(SPELL_WHIRLWIND);
-                    events.ScheduleEvent(EVENT_WHIRLWIND, urand(13000, 18000));
+                    events.ScheduleEvent(EVENT_WHIRLWIND, 13s, 18s);
                     break;
                 case EVENT_CLEAVE:
                     DoCastVictim(SPELL_CLEAVE);
-                    events.ScheduleEvent(EVENT_CLEAVE, urand(10000, 14000));
+                    events.ScheduleEvent(EVENT_CLEAVE, 10s, 14s);
                     break;
                 case EVENT_MORTAL_STRIKE:
                     DoCastVictim(SPELL_MORTAL_STRIKE);
-                    events.ScheduleEvent(EVENT_MORTAL_STRIKE, urand(14000, 16000));
+                    events.ScheduleEvent(EVENT_MORTAL_STRIKE, 14s, 18s);
                     break;
             }
         }
