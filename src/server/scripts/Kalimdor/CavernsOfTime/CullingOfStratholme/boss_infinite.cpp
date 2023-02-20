@@ -91,9 +91,9 @@ struct boss_infinite_corruptor : public BossAI
             target->CastSpell(target, SPELL_CORRUPTION_OF_TIME_AURA, true);
     }
 
-    void EnterCombat(Unit* who) override
+    void JustEngagedWith(Unit* who) override
     {
-        BossAI::EnterCombat(who);
+        BossAI::JustEngagedWith(who);
         me->InterruptNonMeleeSpells(false);
         events.ScheduleEvent(EVENT_SPELL_VOID_STRIKE, 8s);
         events.ScheduleEvent(EVENT_SPELL_CORRUPTING_BLIGHT, 12s);
