@@ -3508,9 +3508,8 @@ void SpellMgr::LoadSpellInfoCorrections()
     // The Smallest Creatures
     ApplySpellFix({ 38544 }, [](SpellInfo* spellInfo)
     {
-        spellInfo->Effects[EFFECT_0].MiscValueB = 427;
-        spellInfo->Effects[EFFECT_0].TargetA = SpellImplicitTargetInfo(1);
-        spellInfo->Effects[EFFECT_1].Effect = 0;
+        spellInfo->Effects[EFFECT_0].MiscValueB = 65;
+        spellInfo->Effects[EFFECT_1].ApplyAuraName = SPELL_AURA_DUMMY;
     });
 
     // Ridding the red rocket

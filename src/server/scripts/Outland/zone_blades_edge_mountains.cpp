@@ -1166,6 +1166,64 @@ public:
     }
 };
 
+enum Marmot
+{
+    SPELL_COAX_MARMOT = 38544
+};
+
+struct npc_marmot : public ScriptedAI
+{
+    npc_marmot(Creature* creature) : ScriptedAI(creature) { }
+
+    void EnterCombat(Unit* who) override
+    {
+        if (me->IsValidAttackTarget(who))
+        {
+            me->AttackStop();
+        }
+
+        if (UpdateVictim())
+            return;
+    }
+
+    void OnCharmed(bool apply) override
+    {
+        if (!apply)
+        {
+            me->GetCharmerOrOwner()->RemoveAurasDueToSpell(SPELL_COAX_MARMOT);
+        }
+    }
+};
+
+class spell_coax_marmot : public AuraScript
+{
+    PrepareAuraScript(spell_coax_marmot);
+
+    void HandleEffectApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        // if you take DC during the charm it will be removed
+        Unit* caster = GetCaster();
+        if (!caster || caster->GetCharm())
+            return;
+
+       caster->RemoveAurasDueToSpell(SPELL_COAX_MARMOT);
+    }
+
+    void HandleEffectRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        if (Unit* charm = GetUnitOwner()->GetCharm())
+            if (GetSpellInfo()->Effects[EFFECT_0].MiscValue >= 0 && charm->GetEntry() == uint32(GetSpellInfo()->Effects[EFFECT_0].MiscValue))
+                if (Creature* marmot = charm->ToCreature())
+                    marmot->DespawnOrUnsummon();
+    }
+
+    void Register() override
+    {
+        OnEffectApply += AuraEffectApplyFn(spell_coax_marmot::HandleEffectApply, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+        OnEffectRemove += AuraEffectRemoveFn(spell_coax_marmot::HandleEffectRemove, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+    }
+};
+
 void AddSC_blades_edge_mountains()
 {
     // Ours
@@ -1180,4 +1238,6 @@ void AddSC_blades_edge_mountains()
     new go_apexis_relic();
     new npc_oscillating_frequency_scanner_master_bunny();
     new spell_oscillating_field();
+    RegisterCreatureAI(npc_marmot);
+    RegisterSpellScript(spell_coax_marmot);
 }
