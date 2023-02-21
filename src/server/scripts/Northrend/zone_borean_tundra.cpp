@@ -2096,7 +2096,7 @@ public:
         Talk(SAY_START);
     }
 
-    void EnterCombat(Unit* who) override
+    void JustEngagedWith(Unit* who) override
     {
         if (me->IsValidAttackTarget(who))
         {
@@ -2131,7 +2131,7 @@ public:
         me->SetPvP(true);
     }
 
-    void EnterCombat(Unit* who) override
+    void JustEngagedWith(Unit* who) override
     {
         events.ScheduleEvent(EVENT_CLEAVE, 5s);
 

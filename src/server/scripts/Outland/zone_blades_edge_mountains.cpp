@@ -1175,7 +1175,7 @@ struct npc_marmot : public ScriptedAI
 {
     npc_marmot(Creature* creature) : ScriptedAI(creature) { }
 
-    void EnterCombat(Unit* who) override
+    void JustEngagedWith(Unit* who) override
     {
         if (me->IsValidAttackTarget(who))
         {
@@ -1193,6 +1193,7 @@ struct npc_marmot : public ScriptedAI
             me->GetCharmerOrOwner()->RemoveAurasDueToSpell(SPELL_COAX_MARMOT);
         }
     }
+
 };
 
 class spell_coax_marmot : public AuraScript
