@@ -124,7 +124,10 @@ enum NPCEntries
 
     // Generic
     NPC_GENERIC_IMP             = 12922,
-    NPC_GENERIC_VOIDWALKER      = 8996
+    NPC_GENERIC_VOIDWALKER      = 8996,
+
+    // Quest
+    NPC_MARMOT                  = 22189
 };
 
 enum PetScalingSpells

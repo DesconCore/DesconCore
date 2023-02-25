@@ -152,7 +152,7 @@ void HostileReference::AddThreat(float modThreat)
     if (isValid() && modThreat >= 0.0f)
     {
         Unit* target = getTarget();
-        if (target->GetEntry() != NPC_EYE_OF_KILROGG) // Excluded Eye of Kilrogg
+        if (target->GetEntry() != NPC_EYE_OF_KILROGG && target->GetEntry() != NPC_MARMOT) // Excluded Eye of Kilrogg/Marmot
         {
             Unit* victimOwner = target->GetCharmerOrOwner();
             if (victimOwner && victimOwner->IsAlive())

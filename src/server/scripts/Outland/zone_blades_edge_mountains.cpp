@@ -1190,10 +1190,10 @@ struct npc_marmot : public ScriptedAI
     {
         if (!apply)
         {
+            // dismiss
             me->GetCharmerOrOwner()->RemoveAurasDueToSpell(SPELL_COAX_MARMOT);
         }
     }
-
 };
 
 class spell_coax_marmot : public AuraScript
