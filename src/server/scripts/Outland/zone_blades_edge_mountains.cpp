@@ -1171,28 +1171,16 @@ enum Marmot
     SPELL_COAX_MARMOT = 38544
 };
 
-struct npc_marmot : public ScriptedAI
+struct npc_marmot : public PossessedAI
 {
-    npc_marmot(Creature* creature) : ScriptedAI(creature) { }
-
-    void JustEngagedWith(Unit* who) override
-    {
-        if (me->IsValidAttackTarget(who))
-        {
-            me->AttackStop();
-        }
-
-        if (UpdateVictim())
-            return;
-    }
+    npc_marmot(Creature* creature) : PossessedAI(creature) { }
 
     void OnCharmed(bool apply) override
     {
-        if (!apply)
-        {
-            // dismiss
+        if (apply)
+            me->SetLevel(me->GetCharmerOrOwner()->getLevel());
+        else
             me->GetCharmerOrOwner()->RemoveAurasDueToSpell(SPELL_COAX_MARMOT);
-        }
     }
 };
 
@@ -1207,7 +1195,7 @@ class spell_coax_marmot : public AuraScript
         if (!caster || caster->GetCharm())
             return;
 
-       caster->RemoveAurasDueToSpell(SPELL_COAX_MARMOT);
+        caster->RemoveAurasDueToSpell(SPELL_COAX_MARMOT);
     }
 
     void HandleEffectRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
