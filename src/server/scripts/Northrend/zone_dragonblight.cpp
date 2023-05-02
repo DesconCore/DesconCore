@@ -639,6 +639,7 @@ enum WintergardeGryphon
     SPELL_RESCUE_VILLAGER                       = 48363,
     SPELL_DROP_OFF_VILLAGER                     = 48397,
     SPELL_RIDE_VEHICLE                          = 43671,
+    SPELL_WARNING_GRYPHON                       = 48366,
 
     NPC_HELPLESS_VILLAGER_A                     = 27315,
     NPC_HELPLESS_VILLAGER_B                     = 27336,
@@ -705,6 +706,7 @@ public:
             me->RemoveVehicleKit(); // not Crash (;
             events.ScheduleEvent(EVENT_TAKE_OFF, 2s);
             me->CastSpell(passenger, VEHICLE_SPELL_PARACHUTE, true);
+            passenger->RemoveAurasDueToSpell(SPELL_WARNING_GRYPHON);
         }
     }
 

@@ -825,9 +825,10 @@ enum FreedProtoDrake
     SPELL_KILL_CREDIT_PRISONER          = 55144,
     SPELL_SUMMON_LIBERATED              = 55073,
     SPELL_KILL_CREDIT_DRAKE             = 55143,
+    SPELL_BOUNDARY_WARNING_2            = 51259,
 
     EVENT_CHECK_AREA                    = 1,
-    EVENT_REACHED_HOME                  = 2,
+    EVENT_REACHED_HOME                  = 2
 };
 
 class npc_freed_protodrake : public CreatureScript
@@ -851,6 +852,14 @@ public:
         {
             if (type == ESCORT_MOTION_TYPE && me->movespline->Finalized())
                 events.ScheduleEvent(EVENT_REACHED_HOME, 2000);
+        }
+
+        void PassengerBoarded(Unit* passenger, int8 /*seatId*/, bool apply) override
+        {
+            if (!apply)
+            {
+                passenger->RemoveAurasDueToSpell(SPELL_BOUNDARY_WARNING_2);
+            }
         }
 
         void UpdateAI(uint32 diff) override
