@@ -4874,6 +4874,35 @@ class spell_gen_threshalisk_charge : public SpellScript
     }
 };
 
+enum Warning
+{
+    SPELL_PURGE_VEHICLE_CONTROL  = 50068
+};
+
+class spell_gen_boundary_warning : public AuraScript
+{
+public:
+    PrepareAuraScript(spell_gen_boundary_warning);
+
+    bool Validate(SpellInfo const* /*SpellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_PURGE_VEHICLE_CONTROL });
+    }
+
+    void HandleRemove(AuraEffect const* aurEff, AuraEffectHandleModes /*mode*/)
+    {
+        if (GetTargetApplication()->GetRemoveMode() != AURA_REMOVE_BY_EXPIRE)
+            return;
+
+        GetCaster()->CastSpell((Unit*)nullptr, SPELL_PURGE_VEHICLE_CONTROL, true, nullptr, aurEff);
+    }
+
+    void Register() override
+    {
+        OnEffectRemove += AuraEffectRemoveFn(spell_gen_boundary_warning::HandleRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+    }
+};
+
 void AddSC_generic_spell_scripts()
 {
     RegisterSpellScript(spell_silithyst);
@@ -5019,4 +5048,5 @@ void AddSC_generic_spell_scripts()
     RegisterSpellScript(spell_gen_purge_vehicle_control);
     RegisterSpellScript(spell_freezing_circle);
     RegisterSpellScript(spell_gen_threshalisk_charge);
+    RegisterSpellScript(spell_gen_boundary_warning);
 }

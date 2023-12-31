@@ -1,4 +1,5 @@
 -- DB update 2022_11_06_00 -> 2022_11_06_01_0
+DELETE FROM `spell_script_names` WHERE `ScriptName`='spell_gen_boundary_warning';
 DELETE FROM `spell_script_names` WHERE `ScriptName`='spell_frostbrood_vanquisher';
 DELETE FROM `spell_script_names` WHERE `ScriptName`='spell_korkron_wing_commander';
 DELETE FROM `spell_script_names` WHERE `ScriptName`='spell_wyrmrest_commander';
@@ -26,7 +27,10 @@ INSERT INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 (56678, 'spell_command_argent_skytalon'),
 (50343, 'spell_wyrmrest_commander'),
 (47424, 'spell_korkron_wing_commander'),
-(52196, 'spell_frostbrood_vanquisher');
+(52196, 'spell_frostbrood_vanquisher'),
+(51272, 'spell_gen_boundary_warning'),
+(51259, 'spell_gen_boundary_warning'),
+(56966, 'spell_gen_boundary_warning');
 
 SET @NPC_FLAMRBRINGER := 27292;
 DELETE FROM `creature_text` WHERE `CreatureID`=@NPC_FLAMRBRINGER;
@@ -101,33 +105,3 @@ DELETE FROM `conditions` WHERE (`SourceTypeOrReferenceId` = 16) AND (`SourceGrou
 
 -- https://www.wowhead.com/wotlk/quest=12072/
 DELETE FROM `conditions` WHERE (`SourceTypeOrReferenceId` = 16) AND (`SourceGroup` = 0) AND (`SourceEntry` = 26813) AND (`SourceId` = 0) AND (`ElseGroup` = 0) AND (`ConditionTypeOrReference` = 23) AND (`ConditionTarget` = 0) AND (`ConditionValue1` = 4163) AND (`ConditionValue2` = 0) AND (`ConditionValue3` = 0);
-
--- https://www.wowhead.com/spell=51272/boundary-warning
--- Duration: 11 seconds
-/* mod */
--- Effect_2: Apply Aura Periodically Trigger Spell with Value Purge Vehicle Control
--- Value: 123 every 10,5 seconds
-INSERT IGNORE INTO `spell_dbc` VALUES
-(51272, 0, 0, 0, 603979776, 1024, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 101, 0, 0, 0, 0, 38, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2207, 0, 0, 'Boundary Warning', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 16712190, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 16712172, 'This vehicle is out of bounds. Return to the field of battle at once!', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 16712190, 'This vehicle is out of bounds. Return to the field of battle at once!', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 16712190, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0);
-
-UPDATE `spell_dbc` SET `Effect_2` = 6, `EffectDieSides_2` = 1, `EffectBasePoints_2` = 122, `ImplicitTargetA_2` = 1, `EffectAura_2` = 227, `EffectAuraPeriod_2` = 10500, `EffectTriggerSpell_2` = 50068 WHERE (`ID` = 51272);
-
--- https://www.wowhead.com/spell=51259/boundary-warning
--- Duration: 16 seconds
-/* mod */
--- Effect_2: Apply Aura Periodically Trigger Spell with Value Purge Vehicle Control
--- Value: 123 every 15,5 seconds
-INSERT IGNORE INTO `spell_dbc` VALUES
-(51259, 0, 0, 0, 603979776, 1024, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 101, 0, 0, 0, 0, 387, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2207, 0, 0, 'Boundary Warning', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 16712190, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 16712172, 'This vehicle is out of bounds. Return to the field of battle at once!', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 16712190, 'This vehicle is out of bounds. Return to the field of battle at once!', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 16712190, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0);
-
-UPDATE `spell_dbc` SET `Effect_2` = 6, `EffectDieSides_2` = 1, `EffectBasePoints_2` = 122, `ImplicitTargetA_2` = 1, `EffectAura_2` = 227, `EffectAuraPeriod_2` = 15500, `EffectTriggerSpell_2` = 50068 WHERE (`ID` = 51259);
-
--- https://www.wowhead.com/spell=56966/boundary-warning
--- Duration: 16 seconds
-/* mod */
--- Effect_3: Apply Aura Periodically Trigger Spell with Value Purge Vehicle Control
--- Value: 123 every 15,5 seconds
-INSERT IGNORE INTO `spell_dbc` VALUES
-(56966, 0, 0, 0, 603979776, 1024, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 101, 0, 0, 0, 0, 387, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 1, 0, 0, 0, 0, 0, 0, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2207, 0, 0, 'Boundary Warning', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 16712190, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 16712172, 'This vehicle is out of bounds. Return to the field of battle at once!', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 16712190, 'This vehicle is out of bounds. Return to the field of battle at once!', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 16712190, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0);
-
-UPDATE `spell_dbc` SET `Effect_3` = 6, `EffectDieSides_3` = 1, `EffectBasePoints_3` = 122, `ImplicitTargetA_3` = 1, `EffectAura_3` = 227, `EffectAuraPeriod_3` = 15500, `EffectTriggerSpell_3` = 50068 WHERE (`ID` = 56966);
