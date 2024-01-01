@@ -21,17 +21,25 @@
 #include "SpellInfo.h"
 #include "SpellScript.h"
 
-enum AreaLimitation
+enum Texts
+{
+    TEXT_EMOTE                               = 0,
+    TEXT_FROSTBROOD                          = 1,
+    TEXT_WYRMREST                            = 3
+};
+
+enum Spells
 {
     SPELL_WARNING_WYRMREST                   = 50065,
     SPELL_WARNING_GRYPHON                    = 48366,
     SPELL_WARNING_FLAMEBRINGER               = 48694,
     SPELL_BOUNDARY_WARNING                   = 51272,
     SPELL_BOUNDARY_WARNING_2                 = 51259,
-    //SPELL_BOUNDARY_WARNING_3                 = 56966,
+    SPELL_BOUNDARY_WARNING_3                 = 56966
+};
 
-    // Zone/Area
-    ICECROWN                                 = 210,
+enum Ground
+{
     ONSLAUGHT_HARBOR                         = 4417,
     VOLDRUNE                                 = 4207,
     WINTERGARDE_KEEP                         = 4177,
@@ -53,7 +61,6 @@ enum AreaLimitation
     GALAKRONDS_REST                          = 4173,
     THE_WICKED_COIL                          = 4174,
     ICEMIST_VILLAGE                          = 4163,
-
     DEATHS_BREACH                            = 4356,
     HAVENSHIRE                               = 4347,
     HAVENSHIRE_STABLES                       = 4350,
@@ -61,12 +68,13 @@ enum AreaLimitation
     HAVENSHIRE_FARMS                         = 4348,
     CRYPT_OF_REMEMBRANCE                     = 4355,
     NEW_AVALON                               = 4343,
-    NEW_AVALON_FORGE                         = 4377,
+    NEW_AVALON_FORGE                         = 4377
+};
 
-    // Text
-    TEXT_EMOTE                               = 0,
-    TEXT_FROSTBROOD                          = 1,
-    TEXT_WYRMREST                            = 3
+enum Zone
+{
+    ICECROWN                                 = 210,
+    SHOLAZAR_BASIN                           = 3711
 };
 
 class spell_wyrmrest_defender_mount : public AuraScript
@@ -210,8 +218,6 @@ public:
             sCreatureTextMgr->SendChat(flamebringer, TEXT_EMOTE, GetUnitOwner(), CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
             GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_WARNING_FLAMEBRINGER, true);
         }
-        else
-            GetUnitOwner()->RemoveAurasByType(SPELL_AURA_DUMMY);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -307,7 +313,7 @@ public:
             GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_BOUNDARY_WARNING, true);
         }
         else
-            GetUnitOwner()->RemoveAurasByType(SPELL_AURA_DUMMY);
+            GetUnitOwner()->RemoveAurasDueToSpell(GetSpellInfo()->Id);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -480,7 +486,7 @@ public:
             case GALAKRONDS_REST:
             case THE_WICKED_COIL:
             case PATH_OF_THE_TITANS:
-                GetUnitOwner()->RemoveAura(SPELL_BOUNDARY_WARNING);
+                GetUnitOwner()->RemoveAurasDueToSpell(SPELL_BOUNDARY_WARNING);
                 break;
         }
     }
@@ -602,6 +608,52 @@ public:
     }
 };
 
+class spell_ride_vehicle_hardcoded : public AuraScript
+{
+public:
+    PrepareAuraScript(spell_ride_vehicle_hardcoded);
+
+    bool Validate(SpellInfo const* /*SpellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_BOUNDARY_WARNING_3 });
+    }
+
+    bool CheckArea(Unit* target)
+    {
+        if (target->GetZoneId() != SHOLAZAR_BASIN)
+            return true;
+        return false;
+    }
+
+    bool Load() override
+    {
+        return GetUnitOwner()->GetTypeId() == TYPEID_PLAYER;
+    }
+
+    void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        if (Creature* soo = GetUnitOwner()->GetVehicleCreatureBase())
+        {
+            Player* target = GetUnitOwner()->ToPlayer();
+            sCreatureTextMgr->SendChat(soo, TEXT_EMOTE, GetUnitOwner(), CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
+            GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_BOUNDARY_WARNING_3, true);
+        }
+    }
+
+    void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        if (GetUnitOwner()->GetZoneId() == SHOLAZAR_BASIN)
+            GetUnitOwner()->RemoveAura(SPELL_BOUNDARY_WARNING_3);
+    }
+
+    void Register() override
+    {
+        DoCheckAreaTarget += AuraCheckAreaTargetFn(spell_ride_vehicle_hardcoded::CheckArea);
+        OnEffectApply += AuraEffectApplyFn(spell_ride_vehicle_hardcoded::HandleApply, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+        OnEffectRemove += AuraEffectRemoveFn(spell_ride_vehicle_hardcoded::HandleRemove, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+    }
+};
+
 void AddSC_area_limitation()
 {
     RegisterSpellScript(spell_wyrmrest_defender_mount);
@@ -614,4 +666,5 @@ void AddSC_area_limitation()
     RegisterSpellScript(spell_wyrmrest_commander);
     RegisterSpellScript(spell_korkron_wing_commander);
     RegisterSpellScript(spell_frostbrood_vanquisher);
+    RegisterSpellScript(spell_ride_vehicle_hardcoded);
 }

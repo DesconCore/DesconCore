@@ -1,4 +1,5 @@
 -- DB update 2022_11_06_00 -> 2022_11_06_01_0
+DELETE FROM `spell_script_names` WHERE `ScriptName`='spell_ride_vehicle_hardcoded';
 DELETE FROM `spell_script_names` WHERE `ScriptName`='spell_gen_boundary_warning';
 DELETE FROM `spell_script_names` WHERE `ScriptName`='spell_frostbrood_vanquisher';
 DELETE FROM `spell_script_names` WHERE `ScriptName`='spell_korkron_wing_commander';
@@ -30,7 +31,8 @@ INSERT INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 (52196, 'spell_frostbrood_vanquisher'),
 (51272, 'spell_gen_boundary_warning'),
 (51259, 'spell_gen_boundary_warning'),
-(56966, 'spell_gen_boundary_warning');
+(56966, 'spell_gen_boundary_warning'),
+(46598, 'spell_ride_vehicle_hardcoded');
 
 SET @NPC_FLAMRBRINGER := 27292;
 DELETE FROM `creature_text` WHERE `CreatureID`=@NPC_FLAMRBRINGER;
