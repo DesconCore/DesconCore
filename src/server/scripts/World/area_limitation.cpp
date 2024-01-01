@@ -26,7 +26,6 @@ enum AreaLimitation
     SPELL_WARNING_WYRMREST                   = 50065,
     SPELL_WARNING_GRYPHON                    = 48366,
     SPELL_WARNING_FLAMEBRINGER               = 48694,
-    SPELL_RIDE_FLAMEBRIGER                   = 48600,
     SPELL_BOUNDARY_WARNING                   = 51272,
     SPELL_BOUNDARY_WARNING_2                 = 51259,
     //SPELL_BOUNDARY_WARNING_3                 = 56966,
@@ -101,6 +100,8 @@ public:
             sCreatureTextMgr->SendChat(wyrmrest, TEXT_EMOTE, GetUnitOwner(), CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
             GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_WARNING_WYRMREST, true);
         }
+        else
+            GetUnitOwner()->RemoveAurasByType(SPELL_AURA_DUMMY);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -155,6 +156,8 @@ public:
             sCreatureTextMgr->SendChat(gryphon, TEXT_EMOTE, GetUnitOwner(), CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
             GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_WARNING_GRYPHON, true);
         }
+        else
+            GetUnitOwner()->RemoveAurasByType(SPELL_AURA_DUMMY);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -207,6 +210,8 @@ public:
             sCreatureTextMgr->SendChat(flamebringer, TEXT_EMOTE, GetUnitOwner(), CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
             GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_WARNING_FLAMEBRINGER, true);
         }
+        else
+            GetUnitOwner()->RemoveAurasByType(SPELL_AURA_DUMMY);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -253,6 +258,8 @@ public:
             sCreatureTextMgr->SendChat(gryphon, TEXT_EMOTE, GetUnitOwner(), CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
             GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_BOUNDARY_WARNING, true);
         }
+        else
+            GetUnitOwner()->RemoveAurasByType(SPELL_AURA_DUMMY);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -299,6 +306,8 @@ public:
             sCreatureTextMgr->SendChat(gryphon, TEXT_EMOTE, GetUnitOwner(), CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
             GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_BOUNDARY_WARNING, true);
         }
+        else
+            GetUnitOwner()->RemoveAurasByType(SPELL_AURA_DUMMY);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -344,8 +353,10 @@ public:
         {
             Player* target = GetUnitOwner()->ToPlayer();
             sCreatureTextMgr->SendChat(drake, TEXT_EMOTE, GetUnitOwner(), CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
-            target->CastSpell(target, SPELL_BOUNDARY_WARNING_2, true);
+            GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_BOUNDARY_WARNING_2, true);
         }
+        else
+            GetUnitOwner()->RemoveAurasByType(SPELL_AURA_DUMMY);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -400,6 +411,8 @@ public:
             sCreatureTextMgr->SendChat(sytalon, TEXT_EMOTE, GetUnitOwner(), CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
             GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_BOUNDARY_WARNING, true);
         }
+        else
+            GetUnitOwner()->RemoveAurasByType(SPELL_AURA_PHASE);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -454,6 +467,8 @@ public:
             sCreatureTextMgr->SendChat(wyrmrest, TEXT_WYRMREST, GetUnitOwner(), CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
             GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_BOUNDARY_WARNING, true);
         }
+        else
+            GetUnitOwner()->RemoveAurasByType(SPELL_AURA_DUMMY);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -508,6 +523,8 @@ public:
             sCreatureTextMgr->SendChat(korkron, TEXT_EMOTE, GetUnitOwner(), CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
             GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_BOUNDARY_WARNING, true);
         }
+        else
+            GetUnitOwner()->RemoveAurasByType(SPELL_AURA_DUMMY);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -556,6 +573,8 @@ public:
             sCreatureTextMgr->SendChat(Vanquisher, TEXT_FROSTBROOD, GetUnitOwner(), CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
             GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_BOUNDARY_WARNING, true);
         }
+        else
+            GetUnitOwner()->RemoveAurasByType(SPELL_AURA_DUMMY);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
