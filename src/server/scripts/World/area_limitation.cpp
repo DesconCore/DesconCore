@@ -74,7 +74,9 @@ enum Ground
 enum Zone
 {
     ICECROWN                                 = 210,
-    SHOLAZAR_BASIN                           = 3711
+    SHOLAZAR_BASIN                           = 3711,
+    THE_STORM_PEAKS                          = 67,
+    ICECROWN_CIDADEL                         = 4812
 };
 
 class spell_wyrmrest_defender_mount : public AuraScript
@@ -620,7 +622,7 @@ public:
 
     bool CheckArea(Unit* target)
     {
-        if (target->GetZoneId() != SHOLAZAR_BASIN)
+        if (target->GetZoneId() != SHOLAZAR_BASIN && target->GetZoneId() != THE_STORM_PEAKS && target->GetZoneId() != ICECROWN_CIDADEL)
             return true;
         return false;
     }
