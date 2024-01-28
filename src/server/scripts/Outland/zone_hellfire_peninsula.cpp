@@ -23,6 +23,7 @@
 #include "ScriptedGossip.h"
 #include "SpellScript.h"
 #include "WorldSession.h"
+#include "SpellAuras.h"
 
 // Ours
 
@@ -446,10 +447,47 @@ public:
     }
 };
 
+enum Arzeth
+{
+    NPC_ARZETH_THE_MERCILESS    = 19354,
+    NPC_ARZETH_THE_POWERLESS    = 20680,
+
+    TALK_ARZETH                 = 0
+};
+
+class spell_q10369_fury_of_the_dreghood_elders : public AuraScript
+{
+    PrepareAuraScript(spell_q10369_fury_of_the_dreghood_elders);
+
+    void HandleEffectRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        if (GetTargetApplication()->GetRemoveMode() != AURA_REMOVE_BY_EXPIRE)
+            return;
+
+        if (Creature* arzeth = GetTarget()->ToCreature())
+        {
+            if (arzeth->GetEntry() == NPC_ARZETH_THE_MERCILESS)
+            {
+                if (arzeth->UpdateEntry(NPC_ARZETH_THE_POWERLESS))
+                {
+                    arzeth->AI()->Talk(TALK_ARZETH);
+                    arzeth->AI()->AttackStart(GetCaster());
+                }
+            }
+        }
+    }
+
+    void Register() override
+    {
+        OnEffectRemove += AuraEffectRemoveFn(spell_q10369_fury_of_the_dreghood_elders::HandleEffectRemove, EFFECT_1, SPELL_AURA_PERIODIC_TRIGGER_SPELL, AURA_EFFECT_HANDLE_REAL);
+    }
+};
+
 void AddSC_hellfire_peninsula()
 {
     // Ours
     new spell_q10935_the_exorcism_of_colonel_jules();
+    RegisterSpellScript(spell_q10369_fury_of_the_dreghood_elders);
 
     // Theirs
     new npc_aeranas();
