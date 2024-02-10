@@ -4448,8 +4448,6 @@ void SpellMgr::LoadSpellInfoCorrections()
     ApplySpellFix({ 32307, 32314 }, [](SpellInfo* spellInfo)
     {
         spellInfo->Effects[EFFECT_0].TargetA = SpellImplicitTargetInfo(TARGET_DEST_TARGET_ENEMY);
-        spellInfo->Effects[EFFECT_0].RadiusEntry = sSpellRadiusStore.LookupEntry(EFFECT_RADIUS_3_YARDS);
-        spellInfo->Effects[EFFECT_1].Effect = 0;
     });
 
     // Summon Cauldron Stuff
