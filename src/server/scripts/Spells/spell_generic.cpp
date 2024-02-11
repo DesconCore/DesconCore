@@ -4903,6 +4903,24 @@ public:
     }
 };
 
+class spell_gen_select_target_dead : public SpellScript
+{
+    PrepareSpellScript(spell_gen_select_target_dead);
+
+    SpellCastResult CheckRequirement()
+    {
+        if (Unit* target = GetExplTargetUnit())
+            if (!target->IsAlive())
+                return SPELL_CAST_OK;
+        return SPELL_FAILED_TARGET_NOT_DEAD;
+    }
+
+    void Register() override
+    {
+        OnCheckCast += SpellCheckCastFn(spell_gen_select_target_dead::CheckRequirement);
+    }
+};
+
 void AddSC_generic_spell_scripts()
 {
     RegisterSpellScript(spell_silithyst);
@@ -5049,4 +5067,5 @@ void AddSC_generic_spell_scripts()
     RegisterSpellScript(spell_freezing_circle);
     RegisterSpellScript(spell_gen_threshalisk_charge);
     RegisterSpellScript(spell_gen_boundary_warning);
+    RegisterSpellScript(spell_gen_select_target_dead);
 }
