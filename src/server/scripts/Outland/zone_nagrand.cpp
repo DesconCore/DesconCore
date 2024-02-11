@@ -604,88 +604,6 @@ public:
     }
 };
 
-enum RuthlessCunning
-{
-    NPC_KIL_SORROW_DEATHSWORN         = 17148,
-    NPC_KIL_SORROW_RITUALIST          = 18658,
-    NPC_KIL_SORROW_CULTIST            = 17147,
-    NPC_KIL_SORROW_SPELLBINDER        = 17146
-};
-
-class spell_plant_warmaul_ogre_banner : public SpellScript
-{
-public:
-    PrepareSpellScript(spell_plant_warmaul_ogre_banner);
-
-    SpellCastResult CheckRequirement()
-    {
-        uint32 cEntry[4] = { NPC_KIL_SORROW_SPELLBINDER, NPC_KIL_SORROW_CULTIST, NPC_KIL_SORROW_DEATHSWORN, NPC_KIL_SORROW_RITUALIST };
-
-        for (uint8 i = 0; i < 4; i++)
-             if (Unit* target = GetExplTargetUnit())
-                 if ((target->ToCreature() && target->ToCreature()->GetEntry() == cEntry[i]))
-                     return SPELL_CAST_OK;
-        return SPELL_FAILED_BAD_TARGETS;
-    }
-
-    SpellCastResult CheckRequirementOne()
-    {
-        uint32 cEntry[4] = { NPC_KIL_SORROW_SPELLBINDER, NPC_KIL_SORROW_CULTIST, NPC_KIL_SORROW_DEATHSWORN, NPC_KIL_SORROW_RITUALIST };
-
-        for (uint8 i = 0; i < 4; i++)
-             if (Unit* target = GetExplTargetUnit())
-                 if ((target->ToCreature() && target->ToCreature()->GetEntry() == cEntry[i]) && !target->IsAlive())
-                     return SPELL_CAST_OK;
-        return SPELL_FAILED_TARGET_NOT_DEAD;
-    }
-
-    void Register() override
-    {
-        OnCheckCast += SpellCheckCastFn(spell_plant_warmaul_ogre_banner::CheckRequirement);
-        OnCheckCast += SpellCheckCastFn(spell_plant_warmaul_ogre_banner::CheckRequirementOne);
-    }
-};
-
-enum ReturningTheFavor
-{
-    NPC_WARMAUL_REAVER                = 17138,
-    NPC_WARMAUL_SHAMAN                = 18064
-};
-
-class spell_plant_kil_sorrow_banner : public SpellScript
-{
-public:
-    PrepareSpellScript(spell_plant_kil_sorrow_banner);
-
-    SpellCastResult CheckRequirement()
-    {
-        uint32 cEntry[4] = { NPC_WARMAUL_REAVER, NPC_WARMAUL_SHAMAN };
-
-        for (uint8 i = 0; i < 4; i++)
-            if (Unit* target = GetExplTargetUnit())
-                if ((target->ToCreature() && target->ToCreature()->GetEntry() == cEntry[i]))
-                    return SPELL_CAST_OK;
-        return SPELL_FAILED_BAD_TARGETS;
-    }
-
-    SpellCastResult CheckRequirementOne()
-    {
-        uint32 cEntry[4] = { NPC_WARMAUL_REAVER, NPC_WARMAUL_SHAMAN };
-
-        for (uint8 i = 0; i < 4; i++)
-            if (Unit* target = GetExplTargetUnit())
-                if ((target->ToCreature() && target->ToCreature()->GetEntry() == cEntry[i]) && !target->IsAlive())
-                    return SPELL_CAST_OK;
-        return SPELL_FAILED_TARGET_NOT_DEAD;
-    }
-
-    void Register() override
-    {
-        OnCheckCast += SpellCheckCastFn(spell_plant_kil_sorrow_banner::CheckRequirement);
-        OnCheckCast += SpellCheckCastFn(spell_plant_kil_sorrow_banner::CheckRequirementOne);
-    }
-};
-
 void AddSC_nagrand()
 {
     new npc_maghar_captive();
@@ -694,6 +612,4 @@ void AddSC_nagrand()
     new go_corkis_prison();
     new npc_kurenai_captive();
     new go_warmaul_prison();
-    RegisterSpellScript(spell_plant_warmaul_ogre_banner);
-    RegisterSpellScript(spell_plant_kil_sorrow_banner);
 }
