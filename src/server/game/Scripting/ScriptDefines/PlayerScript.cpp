@@ -15,6 +15,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "PlayerScript.h"
 #include "ScriptMgr.h"
 #include "ScriptMgrMacros.h"
 
@@ -66,12 +67,35 @@ void ScriptMgr::OnBattlegroundDesertion(Player* player, BattlegroundDesertionTyp
     });
 }
 
+void ScriptMgr::OnPlayerJustDied(Player* player)
+{
+    ExecuteScript<PlayerScript>([&](PlayerScript* script)
+    {
+        script->OnPlayerJustDied(player);
+    });
+}
+
 void ScriptMgr::OnPlayerReleasedGhost(Player* player)
 {
     ExecuteScript<PlayerScript>([&](PlayerScript* script)
     {
         script->OnPlayerReleasedGhost(player);
     });
+}
+
+bool ScriptMgr::OnCanPlayerFlyInZone(Player* player, uint32 mapId, uint32 zoneId, SpellInfo const* bySpell)
+{
+    auto ret = IsValidBoolScript<PlayerScript>([player, mapId, zoneId, bySpell](PlayerScript* script)
+        {
+            return !script->OnCanPlayerFlyInZone(player, mapId, zoneId, bySpell);
+        });
+
+    if (ret && *ret)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 void ScriptMgr::OnPVPKill(Player* killer, Player* killed)
@@ -135,6 +159,14 @@ void ScriptMgr::OnPlayerTalentsReset(Player* player, bool noCost)
     ExecuteScript<PlayerScript>([&](PlayerScript* script)
     {
         script->OnTalentsReset(player, noCost);
+    });
+}
+
+void ScriptMgr::OnAfterSpecSlotChanged(Player* player, uint8 newSlot)
+{
+    ExecuteScript<PlayerScript>([=](PlayerScript* script)
+    {
+        script->OnAfterSpecSlotChanged(player, newSlot);
     });
 }
 
@@ -327,6 +359,14 @@ void ScriptMgr::OnPlayerLoadFromDB(Player* player)
     {
         script->OnLoadFromDB(player);
     });
+}
+
+void ScriptMgr::OnBeforePlayerLogout(Player* player)
+{
+    ExecuteScript<PlayerScript>([&](PlayerScript* script)
+        {
+            script->OnBeforeLogout(player);
+        });
 }
 
 void ScriptMgr::OnPlayerLogout(Player* player)
@@ -579,6 +619,14 @@ void ScriptMgr::OnLootItem(Player* player, Item* item, uint32 count, ObjectGuid 
     ExecuteScript<PlayerScript>([&](PlayerScript* script)
     {
         script->OnLootItem(player, item, count, lootguid);
+    });
+}
+
+void ScriptMgr::OnBeforeFillQuestLootItem(Player* player, LootItem& item)
+{
+    ExecuteScript<PlayerScript>([&](PlayerScript* script)
+    {
+        script->OnBeforeFillQuestLootItem(player, item);
     });
 }
 
@@ -897,6 +945,37 @@ bool ScriptMgr::CanSendMail(Player* player, ObjectGuid receiverGuid, ObjectGuid 
     return true;
 }
 
+bool ScriptMgr::CanSendErrorAlreadyLooted(Player* player)
+{
+    auto ret = IsValidBoolScript<PlayerScript>([&](PlayerScript* script)
+    {
+        return !script->CanSendErrorAlreadyLooted(player);
+    });
+
+    if (ret && *ret)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+void ScriptMgr::OnAfterCreatureLoot(Player* player)
+{
+    ExecuteScript<PlayerScript>([&](PlayerScript* script)
+    {
+        script->OnAfterCreatureLoot(player);
+    });
+}
+
+void ScriptMgr::OnAfterCreatureLootMoney(Player* player)
+{
+    ExecuteScript<PlayerScript>([&](PlayerScript* script)
+    {
+        script->OnAfterCreatureLootMoney(player);
+    });
+}
+
 void ScriptMgr::PetitionBuy(Player* player, Creature* creature, uint32& charterid, uint32& cost, uint32& type)
 {
     ExecuteScript<PlayerScript>([&](PlayerScript* script)
@@ -913,11 +992,11 @@ void ScriptMgr::PetitionShowList(Player* player, Creature* creature, uint32& Cha
     });
 }
 
-void ScriptMgr::OnRewardKillRewarder(Player* player, bool isDungeon, float& rate)
+void ScriptMgr::OnRewardKillRewarder(Player* player, KillRewarder* rewarder, bool isDungeon, float& rate)
 {
     ExecuteScript<PlayerScript>([&](PlayerScript* script)
     {
-        script->OnRewardKillRewarder(player, isDungeon, rate);
+        script->OnRewardKillRewarder(player, rewarder, isDungeon, rate);
     });
 }
 
@@ -959,11 +1038,53 @@ bool ScriptMgr::CanRepopAtGraveyard(Player* player)
     return true;
 }
 
+Optional<bool> ScriptMgr::OnPlayerIsClass(Player const* player, Classes unitClass, ClassContext context)
+{
+    if (ScriptRegistry<PlayerScript>::ScriptPointerList.empty())
+        return {};
+    for (auto const& [scriptID, script] : ScriptRegistry<PlayerScript>::ScriptPointerList)
+    {
+        Optional<bool> scriptResult = script->OnPlayerIsClass(player, unitClass, context);
+        if (scriptResult)
+            return scriptResult;
+    }
+    return {};
+}
+
 void ScriptMgr::OnGetMaxSkillValue(Player* player, uint32 skill, int32& result, bool IsPure)
 {
     ExecuteScript<PlayerScript>([&](PlayerScript* script)
     {
         script->OnGetMaxSkillValue(player, skill, result, IsPure);
+    });
+}
+
+bool ScriptMgr::OnPlayerHasActivePowerType(Player const* player, Powers power)
+{
+    auto ret = IsValidBoolScript<PlayerScript>([&](PlayerScript* script)
+        {
+            return script->OnPlayerHasActivePowerType(player, power);
+        });
+
+    if (ret && *ret)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+void ScriptMgr::OnUpdateGatheringSkill(Player *player, uint32 skillId, uint32 currentLevel, uint32 gray, uint32 green, uint32 yellow, uint32 &gain) {
+    ExecuteScript<PlayerScript>([&](PlayerScript* script)
+    {
+        script->OnUpdateGatheringSkill(player, skillId, currentLevel, gray, green, yellow, gain);
+    });
+}
+
+void ScriptMgr::OnUpdateCraftingSkill(Player *player, SkillLineAbilityEntry const* skill, uint32 currentLevel, uint32& gain) {
+    ExecuteScript<PlayerScript>([&](PlayerScript* script)
+    {
+        script->OnUpdateCraftingSkill(player, skill, currentLevel, gain);
     });
 }
 
@@ -1543,14 +1664,6 @@ void ScriptMgr::OnQuestAbandon(Player* player, uint32 questId)
 }
 
 // Player anti cheat
-void ScriptMgr::AnticheatSetSkipOnePacketForASH(Player* player, bool apply)
-{
-    ExecuteScript<PlayerScript>([&](PlayerScript* script)
-    {
-        script->AnticheatSetSkipOnePacketForASH(player, apply);
-    });
-}
-
 void ScriptMgr::AnticheatSetCanFlybyServer(Player* player, bool apply)
 {
     ExecuteScript<PlayerScript>([&](PlayerScript* script)
@@ -1620,3 +1733,11 @@ bool ScriptMgr::AnticheatCheckMovementInfo(Player* player, MovementInfo const& m
 
     return true;
 }
+
+PlayerScript::PlayerScript(const char* name)
+    : ScriptObject(name)
+{
+    ScriptRegistry<PlayerScript>::AddScript(this);
+}
+
+template class AC_GAME_API ScriptRegistry<PlayerScript>;

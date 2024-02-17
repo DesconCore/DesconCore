@@ -15,15 +15,17 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "CreatureScript.h"
 #include "GameObjectAI.h"
+#include "GameObjectScript.h"
 #include "Player.h"
-#include "ScriptMgr.h"
 #include "ScriptedCreature.h"
 #include "ScriptedEscortAI.h"
 #include "ScriptedGossip.h"
 #include "SpellScript.h"
 #include "WorldSession.h"
 #include "SpellAuras.h"
+#include "SpellScriptLoader.h"
 
 // Ours
 
@@ -158,8 +160,8 @@ enum AncestralWolf
 {
     EMOTE_WOLF_LIFT_HEAD        = 0,
     EMOTE_WOLF_HOWL             = 1,
-    SAY_WOLF_WELCOME            = 2,
-    SPELL_ANCESTRAL_WOLF_BUFF   = 29981,
+    SAY_WOLF_WELCOME            = 0,
+    SPELL_GUIDED_BY_THE_SPIRITS       = 29938,
     NPC_RYGA                    = 17123
 };
 
@@ -173,18 +175,19 @@ public:
         npc_ancestral_wolfAI(Creature* creature) : npc_escortAI(creature)
         {
             if (creature->GetOwner() && creature->GetOwner()->GetTypeId() == TYPEID_PLAYER)
-                Start(false, true, creature->GetOwner()->GetGUID());
+                Start(false, false, creature->GetOwner()->GetGUID());
+            creature->SetSpeed(MOVE_WALK, 1.5f);
+            DoCast(SPELL_GUIDED_BY_THE_SPIRITS);
+            Reset();
         }
 
         void Reset() override
         {
             ryga = nullptr;
-            me->CastSpell(me, SPELL_ANCESTRAL_WOLF_BUFF, false);
             me->SetReactState(REACT_PASSIVE);
         }
 
         void MoveInLineOfSight(Unit* who) override
-
         {
             if (!ryga && who->GetEntry() == NPC_RYGA && me->IsWithinDistInMap(who, 15.0f))
                 if (Creature* temp = who->ToCreature())
@@ -195,7 +198,6 @@ public:
 
         void WaypointReached(uint32 waypointId) override
         {
-            me->CastSpell(me, SPELL_ANCESTRAL_WOLF_BUFF, false);
             switch (waypointId)
             {
                 case 0:
@@ -205,8 +207,51 @@ public:
                     Talk(EMOTE_WOLF_HOWL);
                     break;
                 case 50:
-                    if (ryga && ryga->IsAlive() && !ryga->IsInCombat())
-                        ryga->AI()->Talk(SAY_WOLF_WELCOME);
+                    if (Creature* ryga = me->FindNearestCreature(NPC_RYGA, 70))
+                    {
+                        if (ryga->IsAlive() && !ryga->IsInCombat())
+                        {
+                            ryga->SetWalk(true);
+                            ryga->SetSpeed(MOVE_WALK, 1.0f);
+                            ryga->GetMotionMaster()->MovePoint(0, 515.877991f, 3885.67627f, 190.470535f, true);
+                            Reset();
+                        }
+                    }
+                    break;
+                case 51:
+                    if (Creature* ryga = me->FindNearestCreature(NPC_RYGA, 70))
+                    {
+                        if (ryga->IsAlive() && !ryga->IsInCombat())
+                        {
+                            ryga->SetFacingTo(0.2602f);
+                            ryga->SetStandState(UNIT_STAND_STATE_KNEEL);
+                            ryga->AI()->Talk(SAY_WOLF_WELCOME);
+                            Reset();
+                        }
+                    }
+                    break;
+                case 52:
+                    if (Creature* ryga = me->FindNearestCreature(NPC_RYGA, 70))
+                    {
+                        if (ryga->IsAlive() && !ryga->IsInCombat())
+                        {
+                            ryga->SetStandState(UNIT_STAND_STATE_STAND);
+                            ryga->SetWalk(true);
+                            ryga->SetSpeed(MOVE_WALK, 1.0f);
+                            ryga->GetMotionMaster()->MovePoint(0, 504.59201f, 3882.12988f, 192.156006f, true);
+                            Reset();
+                        }
+                    }
+                    break;
+                case 53:
+                    if (Creature* ryga = me->FindNearestCreature(NPC_RYGA, 70))
+                    {
+                        if (ryga->IsAlive() && !ryga->IsInCombat())
+                        {
+                            ryga->SetFacingTo(5.79449f);
+                            Reset();
+                        }
+                    }
                     break;
             }
         }
@@ -235,7 +280,8 @@ enum WoundedBloodElf
     SAY_ELF_AGGRO               = 5,
     QUEST_ROAD_TO_FALCON_WATCH  = 9375,
     NPC_HAALESHI_WINDWALKER     = 16966,
-    NPC_HAALESHI_TALONGUARD     = 16967
+    NPC_HAALESHI_TALONGUARD     = 16967,
+    ARAKKOA_CAGE                = 181664
 };
 
 class npc_wounded_blood_elf : public CreatureScript
@@ -247,7 +293,11 @@ public:
     {
         npc_wounded_blood_elfAI(Creature* creature) : npc_escortAI(creature) { }
 
-        void Reset() override { }
+        void Reset() override
+        {
+            me->SetReactState(REACT_PASSIVE);
+            me->FindNearestGameObject(ARAKKOA_CAGE, 10.0f)->SetGoState(GO_STATE_READY);
+        }
 
         void JustEngagedWith(Unit* /*who*/) override
         {
@@ -264,6 +314,7 @@ public:
         {
             if (quest->GetQuestId() == QUEST_ROAD_TO_FALCON_WATCH)
             {
+                me->SetReactState(REACT_AGGRESSIVE);
                 me->SetFaction(FACTION_ESCORTEE_H_PASSIVE);
                 npc_escortAI::Start(true, false, player->GetGUID());
             }
@@ -279,6 +330,7 @@ public:
             {
                 case 0:
                     Talk(SAY_ELF_START, player);
+                    me->FindNearestGameObject(ARAKKOA_CAGE, 10.0f)->SetGoState(GO_STATE_ACTIVE);
                     break;
                 case 9:
                     Talk(SAY_ELF_SUMMON1, player);
@@ -391,6 +443,113 @@ public:
     }
 };
 
+enum Aledis
+{
+    SAY_CHALLENGE = 0,
+    SAY_DEFEATED = 1,
+    EVENT_TALK = 1,
+    EVENT_ATTACK = 2,
+    EVENT_EVADE = 3,
+    EVENT_FIREBALL = 4,
+    EVENT_FROSTNOVA = 5,
+    SPELL_FIREBALL = 20823,
+    SPELL_FROSTNOVA = 11831,
+};
+
+struct npc_magister_aledis : public ScriptedAI
+{
+    npc_magister_aledis(Creature* creature) : ScriptedAI(creature) { }
+
+    void StartFight(Player* player)
+    {
+        me->Dismount();
+        me->SetFacingToObject(player);
+        me->RemoveNpcFlag(UNIT_NPC_FLAG_GOSSIP);
+        _playerGUID = player->GetGUID();
+        _events.ScheduleEvent(EVENT_TALK, 2s);
+    }
+
+    void Reset() override
+    {
+        me->RestoreFaction();
+        me->RemoveNpcFlag(UNIT_NPC_FLAG_QUESTGIVER);
+        me->SetNpcFlag(UNIT_NPC_FLAG_GOSSIP);
+        me->SetImmuneToPC(true);
+    }
+
+    void DamageTaken(Unit* /*attacker*/, uint32& damage, DamageEffectType /*damageType*/, SpellSchoolMask /*spellInfo = nullptr*/) override
+    {
+        if (damage > me->GetHealth() || me->HealthBelowPctDamaged(20, damage))
+        {
+            damage = 0;
+
+            _events.Reset();
+            me->RestoreFaction();
+            me->RemoveAllAuras();
+            me->GetThreatMgr().ClearAllThreat();
+            me->CombatStop(true);
+            me->SetNpcFlag(UNIT_NPC_FLAG_QUESTGIVER);
+            me->SetImmuneToPC(true);
+            Talk(SAY_DEFEATED);
+
+            _events.ScheduleEvent(EVENT_EVADE, 1min);
+        }
+    }
+
+    void UpdateAI(uint32 diff) override
+    {
+        _events.Update(diff);
+
+        while (uint32 eventId = _events.ExecuteEvent())
+        {
+            switch (eventId)
+            {
+                case EVENT_TALK:
+                    Talk(SAY_CHALLENGE);
+                    _events.ScheduleEvent(EVENT_ATTACK, 2s);
+                    break;
+                case EVENT_ATTACK:
+                    me->SetImmuneToPC(false);
+                    me->SetFaction(FACTION_MONSTER);
+                    if (Player* player = ObjectAccessor::GetPlayer(*me, _playerGUID))
+                    {
+                        AttackStart(player);
+                    }
+                    _events.ScheduleEvent(EVENT_FIREBALL, 1ms);
+                    _events.ScheduleEvent(EVENT_FROSTNOVA, 5s);
+                    break;
+                case EVENT_FIREBALL:
+                    DoCast(SPELL_FIREBALL);
+                    _events.ScheduleEvent(EVENT_FIREBALL, 10s);
+                    break;
+                case EVENT_FROSTNOVA:
+                    DoCastAOE(SPELL_FROSTNOVA);
+                    _events.ScheduleEvent(EVENT_FROSTNOVA, 20s);
+                    break;
+                case EVENT_EVADE:
+                    EnterEvadeMode();
+                    break;
+            }
+        }
+
+        if (UpdateVictim())
+        {
+            DoMeleeAttackIfReady();
+        }
+    }
+
+    void sGossipSelect(Player* player, uint32 /*sender*/, uint32 /*action*/) override
+    {
+        CloseGossipMenuFor(player);
+        me->StopMoving();
+        StartFight(player);
+    }
+
+private:
+    EventMap _events;
+    ObjectGuid _playerGUID;
+};
+
 enum Beacon
 {
     NPC_STONESCHYE_WHELP        = 16927,
@@ -495,4 +654,6 @@ void AddSC_hellfire_peninsula()
     new npc_wounded_blood_elf();
     new npc_fel_guard_hound();
     new go_beacon();
+
+    RegisterCreatureAI(npc_magister_aledis);
 }

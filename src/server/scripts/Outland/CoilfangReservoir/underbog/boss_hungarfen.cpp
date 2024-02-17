@@ -15,10 +15,11 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "CreatureScript.h"
 #include "Player.h"
-#include "ScriptMgr.h"
 #include "ScriptedCreature.h"
 #include "SpellScript.h"
+#include "SpellScriptLoader.h"
 #include "TaskScheduler.h"
 #include "the_underbog.h"
 
@@ -44,35 +45,29 @@ enum Misc
 
 struct boss_hungarfen : public BossAI
 {
-    boss_hungarfen(Creature* creature) : BossAI(creature, DATA_HUNGARFEN), _foul_spores(false) { }
+    boss_hungarfen(Creature* creature) : BossAI(creature, DATA_HUNGARFEN) { }
 
-    void DamageTaken(Unit* /*attacker*/, uint32& damage, DamageEffectType, SpellSchoolMask) override
+    void Reset() override
     {
-        if (me->HealthBelowPctDamaged(20, damage) && !_foul_spores)
-        {
-            _foul_spores = true;
+        _Reset();
+        _scheduler.CancelAll();
+        DoCastAOE(SPELL_DESPAWN_MUSHROOMS, true);
+
+        ScheduleHealthCheckEvent(20, [&] {
             me->AddUnitState(UNIT_STATE_ROOT);
             Talk(EMOTE_ROARS);
             DoCastSelf(SPELL_FOUL_SPORES);
             _scheduler.DelayAll(11s);
             _scheduler.Schedule(11s, [this](TaskContext /*context*/)
-                {
-                    me->ClearUnitState(UNIT_STATE_ROOT);
-                });
-        }
+            {
+                me->ClearUnitState(UNIT_STATE_ROOT);
+            });
+        });
     }
 
-    void Reset() override
+    void JustEngagedWith(Unit* /*who*/) override
     {
-        BossAI::Reset();
-        _foul_spores = false;
-        _scheduler.CancelAll();
-        DoCastAOE(SPELL_DESPAWN_MUSHROOMS, true);
-    }
-
-    void JustEngagedWith(Unit* who) override
-    {
-        BossAI::JustEngagedWith(who);
+        _JustEngagedWith();
 
         _scheduler.Schedule(IsHeroic() ? randtime(2400ms, 3600ms) : 10s, [this](TaskContext context)
             {
@@ -107,7 +102,6 @@ struct boss_hungarfen : public BossAI
 
 private:
     TaskScheduler _scheduler;
-    bool _foul_spores;
 };
 
 struct npc_underbog_mushroom : public ScriptedAI
@@ -195,3 +189,4 @@ void AddSC_boss_hungarfen()
     RegisterSpellScript(spell_spore_cloud);
     RegisterSpellScript(spell_despawn_underbog_mushrooms);
 }
+

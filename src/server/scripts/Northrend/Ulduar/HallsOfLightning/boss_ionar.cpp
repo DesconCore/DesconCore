@@ -15,8 +15,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "CreatureScript.h"
 #include "Player.h"
-#include "ScriptMgr.h"
 #include "ScriptedCreature.h"
 #include "SpellInfo.h"
 #include "halls_of_lightning.h"
@@ -97,9 +97,6 @@ public:
 
             if (m_pInstance)
                 m_pInstance->SetData(TYPE_IONAR, NOT_STARTED);
-
-            // Ionar is immune to nature damage
-            me->ApplySpellImmune(0, IMMUNITY_DAMAGE, SPELL_SCHOOL_MASK_NATURE, true);
         }
 
         void ScheduleEvents(bool spark)

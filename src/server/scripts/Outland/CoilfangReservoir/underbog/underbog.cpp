@@ -15,9 +15,10 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptMgr.h"
+#include "CreatureScript.h"
 #include "ScriptedCreature.h"
 #include "SpellScript.h"
+#include "SpellScriptLoader.h"
 #include "TaskScheduler.h"
 #include "the_underbog.h"
 
@@ -37,16 +38,16 @@ struct npc_underbat : public ScriptedAI
 
     void JustEngagedWith(Unit* /*who*/) override
     {
-        _scheduler.Schedule(2200ms, 6900ms, [this](TaskContext context)
+        _scheduler.Schedule(1200ms, 12500ms, [this](TaskContext context)
         {
             if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, [&](Unit* u)
             {
-                return u->IsAlive() && !u->IsPet() && me->IsWithinCombatRange(u, 20.f) && !me->HasInArc(M_PI, u);
+                return u->IsAlive() && !u->IsPet() && me->IsWithinCombatRange(u, 5.0f) && !me->HasInArc(M_PI, u);
             }))
             {
                 DoCast(target, SPELL_TENTACLE_LASH);
             }
-            context.Repeat(5700ms, 9700ms);
+            context.Repeat(1200ms, 12500ms);
         });
     }
 
@@ -122,3 +123,4 @@ void AddSC_underbog()
     RegisterSpellScript(spell_fungal_decay);
     RegisterSpellScript(spell_allergies);
 }
+

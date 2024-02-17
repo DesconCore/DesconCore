@@ -15,8 +15,10 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptMgr.h"
+#include "CreatureScript.h"
 #include "ScriptedCreature.h"
+#include "SpellScriptLoader.h"
+#include "TaskScheduler.h"
 #include "hellfire_ramparts.h"
 
 enum Says
@@ -65,7 +67,7 @@ struct boss_vazruden_the_herald : public BossAI
 
     void Reset() override
     {
-        BossAI::Reset();
+        _Reset();
         me->SetVisible(true);
         me->SetReactState(REACT_PASSIVE);
         me->SummonCreature(NPC_HELLFIRE_SENTRY, -1372.56f, 1724.31f, 82.967f, 5.3058f);
@@ -81,11 +83,6 @@ struct boss_vazruden_the_herald : public BossAI
         {
             summon->SetInCombatWithZone();
         }
-    }
-
-    void JustDied(Unit*) override
-    {
-        instance->SetBossState(DATA_VAZRUDEN, DONE);
     }
 
     void MovementInform(uint32 type, uint32 id) override
@@ -105,7 +102,7 @@ struct boss_vazruden_the_herald : public BossAI
         {
             Talk(SAY_INTRO);
             me->GetMotionMaster()->MovePoint(POINT_MIDDLE, -1406.5f, 1746.5f, 85.0f, false);
-            me->setActive(true);
+            _JustEngagedWith();
         }
         else if (summons.size() == 0)
         {
@@ -139,11 +136,11 @@ struct boss_vazruden_the_herald : public BossAI
     }
 };
 
-struct boss_nazan : public BossAI
+struct boss_nazan : public ScriptedAI
 {
-    boss_nazan(Creature* creature) : BossAI(creature, DATA_VAZRUDEN)
+    boss_nazan(Creature* creature) : ScriptedAI(creature)
     {
-        scheduler.SetValidator([this]
+        _scheduler.SetValidator([this]
         {
             return !me->HasUnitState(UNIT_STATE_CASTING);
         });
@@ -162,11 +159,11 @@ struct boss_nazan : public BossAI
 
     void JustEngagedWith(Unit*) override
     {
-        scheduler.CancelGroup(GROUP_PHASE_2);
-        scheduler.Schedule(5ms, GROUP_PHASE_1, [this](TaskContext context)
+        _scheduler.CancelAll();
+        _scheduler.Schedule(5ms, GROUP_PHASE_1, [this](TaskContext context)
         {
             me->GetMotionMaster()->MovePoint(POINT_FLIGHT, NazanPos[urand(0, 2)], false);
-            scheduler.DelayAll(7s);
+            _scheduler.DelayAll(7s);
             context.Repeat(30s);
         }).Schedule(5s, GROUP_PHASE_1, [this](TaskContext context)
         {
@@ -191,6 +188,7 @@ struct boss_nazan : public BossAI
     {
         if (param == ACTION_FLY_DOWN)
         {
+            _scheduler.CancelGroup(GROUP_PHASE_1);
             Talk(EMOTE_NAZAN);
             me->SetReactState(REACT_PASSIVE);
             me->InterruptNonMeleeSpells(true);
@@ -205,9 +203,8 @@ struct boss_nazan : public BossAI
             me->SetCanFly(false);
             me->SetDisableGravity(false);
             me->SetReactState(REACT_AGGRESSIVE);
-            scheduler.CancelGroup(GROUP_PHASE_1);
             me->GetMotionMaster()->MoveChase(me->GetVictim());
-            scheduler.Schedule(5s, GROUP_PHASE_2, [this](TaskContext context)
+            _scheduler.Schedule(5s, GROUP_PHASE_2, [this](TaskContext context)
             {
                 DoCastVictim(SPELL_CONE_OF_FIRE);
                 context.Repeat(12s);
@@ -216,9 +213,10 @@ struct boss_nazan : public BossAI
                 DoCastRandomTarget(SPELL_FIREBALL);
                 context.Repeat(4s, 6s);
             });
+
             if (IsHeroic())
             {
-                scheduler.Schedule(10s, GROUP_PHASE_2, [this](TaskContext context)
+                _scheduler.Schedule(10s, GROUP_PHASE_2, [this](TaskContext context)
                 {
                     DoCastSelf(SPELL_BELLOWING_ROAR);
                     context.Repeat(30s);
@@ -227,24 +225,28 @@ struct boss_nazan : public BossAI
         }
     }
 
-    void UpdateAI(uint32 /*diff*/) override
+    void UpdateAI(uint32 diff) override
     {
         if (!UpdateVictim())
             return;
 
-        if (me->HasUnitState(UNIT_STATE_CASTING))
-            return;
+        _scheduler.Update(diff, [this]
+            {
+            if (!me->IsLevitating())
+                DoMeleeAttackIfReady();
+            });
 
-        if (!me->IsLevitating())
-            DoMeleeAttackIfReady();
     }
+
+private:
+    TaskScheduler _scheduler;
 };
 
-struct boss_vazruden : public BossAI
+struct boss_vazruden : public ScriptedAI
 {
-    boss_vazruden(Creature* creature) : BossAI(creature, DATA_VAZRUDEN)
+    boss_vazruden(Creature* creature) : ScriptedAI(creature)
     {
-        scheduler.SetValidator([this]
+        _scheduler.SetValidator([this]
         {
             return !me->HasUnitState(UNIT_STATE_CASTING);
         });
@@ -252,6 +254,7 @@ struct boss_vazruden : public BossAI
 
     void Reset() override
     {
+        _scheduler.CancelAll();
         _nazanCalled = false;
     }
 
@@ -263,7 +266,7 @@ struct boss_vazruden : public BossAI
 
     void JustEngagedWith(Unit*) override
     {
-        scheduler.Schedule(5s, [this](TaskContext /*context*/)
+        _scheduler.Schedule(5s, [this](TaskContext /*context*/)
         {
             Talk(SAY_AGGRO);
         }).Schedule(4s, [this](TaskContext context)
@@ -280,7 +283,7 @@ struct boss_vazruden : public BossAI
             _hasSpoken = true;
             Talk(SAY_KILL);
         }
-        scheduler.Schedule(6s, [this](TaskContext /*context*/)
+        _scheduler.Schedule(6s, [this](TaskContext /*context*/)
         {
             _hasSpoken = false;
         });
@@ -305,13 +308,16 @@ struct boss_vazruden : public BossAI
         if (!UpdateVictim())
             return;
 
-        scheduler.Update(diff);
-        DoMeleeAttackIfReady();
+        _scheduler.Update(diff, [this]
+            {
+                DoMeleeAttackIfReady();
+            });
     }
 
 private:
     bool _hasSpoken;
     bool _nazanCalled;
+    TaskScheduler _scheduler;
 };
 
 class spell_vazruden_fireball : public SpellScript
@@ -358,3 +364,4 @@ void AddSC_boss_vazruden_the_herald()
     RegisterSpellScript(spell_vazruden_fireball);
     RegisterSpellScript(spell_vazruden_call_nazan);
 }
+

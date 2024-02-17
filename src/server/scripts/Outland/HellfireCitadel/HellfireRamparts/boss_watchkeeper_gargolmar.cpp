@@ -15,8 +15,9 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptMgr.h"
+#include "CreatureScript.h"
 #include "ScriptedCreature.h"
+#include "SpellScriptLoader.h"
 #include "hellfire_ramparts.h"
 
 enum Says
@@ -144,7 +145,29 @@ private:
 
 };
 
+class spell_gargolmar_retalliation : public AuraScript
+{
+    PrepareAuraScript(spell_gargolmar_retalliation);
+
+    bool CheckProc(ProcEventInfo& eventInfo)
+    {
+        if (!eventInfo.GetActor() || !eventInfo.GetProcTarget())
+        {
+            return false;
+        }
+
+        return GetTarget()->isInFront(eventInfo.GetActor(), M_PI);
+    }
+
+    void Register() override
+    {
+        DoCheckProc += AuraCheckProcFn(spell_gargolmar_retalliation::CheckProc);
+    }
+};
+
 void AddSC_boss_watchkeeper_gargolmar()
 {
     RegisterHellfireRampartsCreatureAI(boss_watchkeeper_gargolmar);
+    RegisterSpellScript(spell_gargolmar_retalliation);
 }
+

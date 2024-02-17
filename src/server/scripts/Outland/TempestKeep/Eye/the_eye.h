@@ -36,10 +36,10 @@ enum EyeData
     DATA_KAELTHAS           = 3,
     MAX_ENCOUNTER           = 4,
 
-    DATA_KAEL_ADVISOR1      = 10,
-    DATA_KAEL_ADVISOR2      = 11,
-    DATA_KAEL_ADVISOR3      = 12,
-    DATA_KAEL_ADVISOR4      = 13
+    DATA_THALADRED          = 10,
+    DATA_LORD_SANGUINAR     = 11,
+    DATA_CAPERNIAN          = 12,
+    DATA_TELONICUS          = 13
 };
 
 enum EyeNPCs
@@ -64,5 +64,7 @@ inline AI* GetTheEyeAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, TheEyeScriptName);
 }
+
+#define RegisterTheEyeAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetTheEyeAI)
 
 #endif

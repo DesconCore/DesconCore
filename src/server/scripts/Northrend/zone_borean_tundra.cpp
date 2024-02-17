@@ -15,9 +15,9 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "CreatureScript.h"
 #include "PassiveAI.h"
 #include "Player.h"
-#include "ScriptMgr.h"
 #include "ScriptedCreature.h"
 #include "ScriptedEscortAI.h"
 #include "ScriptedFollowerAI.h"
@@ -25,7 +25,7 @@
 #include "SpellAuras.h"
 #include "SpellInfo.h"
 #include "SpellScript.h"
-#include "WorldSession.h"
+#include "SpellScriptLoader.h"
 
 // Ours
 enum eDrakeHunt
@@ -2181,3 +2181,4 @@ void AddSC_borean_tundra()
     RegisterCreatureAI(npcs_004a8_57k_66d_005b6_55d);
     RegisterCreatureAI(npc_winterfin_first_responder);
 }
+

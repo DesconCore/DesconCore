@@ -43,13 +43,13 @@ struct Realm;
 
 AC_GAME_API extern Realm realm;
 
-enum ShutdownMask
+enum ShutdownMask : uint8
 {
     SHUTDOWN_MASK_RESTART = 1,
     SHUTDOWN_MASK_IDLE    = 2,
 };
 
-enum ShutdownExitCode
+enum ShutdownExitCode : uint8
 {
     SHUTDOWN_EXIT_CODE = 0,
     ERROR_EXIT_CODE    = 1,
@@ -338,8 +338,6 @@ public:
     void LoadDBVersion() override;
     [[nodiscard]] char const* GetDBVersion() const override { return _dbVersion.c_str(); }
 
-    void LoadMotd() override;
-
     void UpdateAreaDependentAuras() override;
 
     [[nodiscard]] uint32 GetCleaningFlags() const override { return _cleaningFlags; }
@@ -350,6 +348,8 @@ public:
     void SetRealmName(std::string name) override { _realmName = name; } // pussywizard
 
     void RemoveOldCorpses() override;
+
+    void DoForAllOnlinePlayers(std::function<void(Player*)> exec) override;
 
 protected:
     void _UpdateGameTime();
