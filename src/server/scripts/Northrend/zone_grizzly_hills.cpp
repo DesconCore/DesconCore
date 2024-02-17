@@ -681,32 +681,6 @@ public:
     }
 };
 
-enum renewskirmisher
-{
-    NPC_WOUNDED_SKIRMISHER = 27463
-};
-
-class spell_renew_skirmisher : public SpellScript
-{
-public:
-    PrepareSpellScript(spell_renew_skirmisher);
-
-    SpellCastResult CheckRequirement()
-    {
-        if (Unit* caster = GetCaster())
-            if (Creature* wounded = caster->FindNearestCreature(NPC_WOUNDED_SKIRMISHER, 5.0f))
-                if (!wounded->IsInCombat())
-                    return SPELL_CAST_OK;
-
-        return SPELL_FAILED_CASTER_AURASTATE;
-    }
-
-    void Register() override
-    {
-        OnCheckCast += SpellCheckCastFn(spell_renew_skirmisher::CheckRequirement);
-    }
-};
-
 /*Venture co. Straggler - when you cast Smoke Bomb, he will yell and run away*/
 enum SmokeEmOut
 {
@@ -1304,7 +1278,6 @@ void AddSC_grizzly_hills()
     new npc_tallhorn_stag();
     new npc_amberpine_woodsman();
     RegisterCreatureAI(npc_wounded_skirmisher);
-    RegisterSpellScript(spell_renew_skirmisher);
     new npc_venture_co_straggler();
     new npc_lake_frog();
     new spell_shredder_delivery();
