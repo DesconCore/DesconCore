@@ -2713,17 +2713,12 @@ public:
     {
     }
 
-    void UpdateAI(uint32 /*diff*/) override
+    void IsSummonedBy(WorldObject* /*summoner*/) override
     {
-        if (!UpdateVictim())
-            return;
-
-        DoMeleeAttackIfReady();
-
         _scheduler.Schedule(180s, [this](TaskContext /*context*/)
-        {
-            me->KillSelf();
-        });
+            {
+                me->KillSelf();
+            });
     }
 
     void UpdateAI(uint32 diff) override
