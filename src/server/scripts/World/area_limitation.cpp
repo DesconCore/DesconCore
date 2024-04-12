@@ -68,7 +68,10 @@ enum Ground
     HAVENSHIRE_FARMS                         = 4348,
     CRYPT_OF_REMEMBRANCE                     = 4355,
     NEW_AVALON                               = 4343,
-    NEW_AVALON_FORGE                         = 4377
+    NEW_AVALON_FORGE                         = 4377,
+    THE_SHADOW_VAULT                         = 4477,
+    WEEPING_QUARRY                           = 4517
+
 };
 
 enum Zone
@@ -303,7 +306,7 @@ public:
         return ValidateSpellInfo({ SPELL_BOUNDARY_WARNING });
     }
 
-    bool CheckArea(Unit* target)
+    bool CheckZone(Unit* target)
     {
         if (target->GetZoneId() != ICECROWN)
             return false;
@@ -338,7 +341,7 @@ public:
 
     void Register() override
     {
-        DoCheckAreaTarget += AuraCheckAreaTargetFn(spell_onslaught_gryphon::CheckArea);
+        DoCheckAreaTarget += AuraCheckAreaTargetFn(spell_onslaught_gryphon::CheckZone);
         OnEffectApply += AuraEffectApplyFn(spell_onslaught_gryphon::HandleApply, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
         OnEffectRemove += AuraEffectRemoveFn(spell_onslaught_gryphon::HandleRemove, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
     }
@@ -644,6 +647,13 @@ public:
 
     bool CheckArea(Unit* target)
     {
+        if (target->GetAreaId() != THE_SHADOW_VAULT && target->GetAreaId() != WEEPING_QUARRY)
+            return true;
+        return false;
+    }
+
+    bool CheckZone(Unit* target)
+    {
         if (target->GetZoneId() != SHOLAZAR_BASIN && target->GetZoneId() != THE_STORM_PEAKS && target->GetZoneId() != ICECROWN_CIDADEL)
             return true;
         return false;
@@ -668,11 +678,20 @@ public:
     {
         if (GetUnitOwner()->GetZoneId() == SHOLAZAR_BASIN)
             GetUnitOwner()->RemoveAura(SPELL_BOUNDARY_WARNING_3);
+
+        switch (GetUnitOwner()->GetAreaId())
+        {
+            case THE_SHADOW_VAULT:
+            case WEEPING_QUARRY:
+                GetUnitOwner()->RemoveAura(SPELL_BOUNDARY_WARNING_3);
+                break;
+        }
     }
 
     void Register() override
     {
         DoCheckAreaTarget += AuraCheckAreaTargetFn(spell_ride_vehicle_hardcoded::CheckArea);
+        DoCheckAreaTarget += AuraCheckAreaTargetFn(spell_ride_vehicle_hardcoded::CheckZone);
         OnEffectApply += AuraEffectApplyFn(spell_ride_vehicle_hardcoded::HandleApply, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
         OnEffectRemove += AuraEffectRemoveFn(spell_ride_vehicle_hardcoded::HandleRemove, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
     }
