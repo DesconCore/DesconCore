@@ -689,6 +689,57 @@ public:
     }
 };
 
+enum Arthorns
+{
+    POINT_LAND = 1
+};
+
+class npc_Arthorns_sparrowhawk : public ScriptedAI
+{
+public:
+    npc_Arthorns_sparrowhawk(Creature* creature) : ScriptedAI(creature)
+    {
+        creature->SetDisableGravity(true);
+    }
+
+    void Reset() override
+    {
+        me->SetUnitFlag(UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_NON_ATTACKABLE);
+    }
+
+    void IsSummonedBy(WorldObject* summoner) override
+    {
+        me->SetFacingToObject(summoner);
+        Position pos = summoner->GetPosition();
+        me->GetMotionMaster()->MovePoint(POINT_LAND, pos);
+    }
+
+    void MovementInform(uint32 type, uint32 id) override
+    {
+        if (type == POINT_MOTION_TYPE && id == POINT_LAND)
+        {
+            me->RemoveUnitFlag(UNIT_FLAG_NOT_SELECTABLE);
+        }
+    }
+};
+
+class spell_call_arthorns_sparrowhawk : public SpellScript
+{
+    PrepareSpellScript(spell_call_arthorns_sparrowhawk);
+
+    void SetDest(SpellDestination& dest)
+    {
+        // Adjust effect summon position
+        Position const offset = { 25.0f, 25.0f, 85.0f, 0.0f };
+        dest.RelocateOffset(offset);
+    }
+
+    void Register() override
+    {
+        OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_call_arthorns_sparrowhawk::SetDest, EFFECT_0, TARGET_DEST_CASTER_SUMMON);
+    }
+};
+
 void AddSC_terokkar_forest()
 {
     // Ours
@@ -706,4 +757,6 @@ void AddSC_terokkar_forest()
     new npc_isla_starmane();
     new go_skull_pile();
     new npc_slim();
+    RegisterCreatureAI(npc_Arthorns_sparrowhawk);
+    RegisterSpellScript(spell_call_arthorns_sparrowhawk);
 }
