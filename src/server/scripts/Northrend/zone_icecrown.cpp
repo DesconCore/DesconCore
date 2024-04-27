@@ -2181,6 +2181,44 @@ public:
     }
 };
 
+enum Gryphon
+{
+    SPELL_BLOOD_PRESENCE        = 54476,
+
+    EVENT_BLOOD_PRESENCE        = 1,
+    EVENT_GRYPHON_REAPPEAR      = 2
+};
+
+struct npc_bone_gryphon : public CreatureAI
+{
+public:
+    npc_bone_gryphon(Creature* creature) : CreatureAI(creature) { }
+
+    void Reset() override
+    {
+        events.Reset();
+        events.ScheduleEvent(EVENT_BLOOD_PRESENCE, 50ms);
+        me->SetVisible(true);
+    }
+
+    void UpdateAI(uint32 diff) override
+    {
+        events.Update(diff);
+
+        switch (events.ExecuteEvent())
+        {
+            case EVENT_BLOOD_PRESENCE:
+                DoCastSelf(SPELL_BLOOD_PRESENCE, true);
+                events.ScheduleEvent(EVENT_GRYPHON_REAPPEAR, 13s, 20s);
+                break;
+            case EVENT_GRYPHON_REAPPEAR:
+                me->SetVisible(false);
+                me->setDeathState(DeathState::Dead);
+                break;
+        }
+    }
+};
+
 void AddSC_icecrown()
 {
     // Ours
@@ -2203,5 +2241,6 @@ void AddSC_icecrown()
     new npc_tournament_training_dummy();
     new npc_blessed_banner();
     new npc_frostbrood_skytalon();
+    RegisterCreatureAI(npc_bone_gryphon);
 }
 
