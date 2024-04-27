@@ -170,33 +170,6 @@ class spell_item_runescroll_of_fortitude : public SpellScript
     }
 };
 
-enum BrannsCommunicator
-{
-    NPC_BRANN_BRONZEBEARD = 29579,
-    SPELL_CONTACT_BRANN   = 55038,
-};
-
-class spell_item_branns_communicator : public SpellScript
-{
-    PrepareSpellScript(spell_item_branns_communicator)
-
-    void OnScriptEffect(SpellEffIndex effIndex)
-    {
-        PreventHitDefaultEffect(effIndex);
-
-        if (Player* target = GetHitPlayer())
-        {
-            target->KilledMonsterCredit(NPC_BRANN_BRONZEBEARD); // Brann's entry
-            target->CastSpell(target, SPELL_CONTACT_BRANN, true); // Brann summoning spell
-        }
-    }
-
-    void Register() override
-    {
-        OnEffectHitTarget += SpellEffectFn(spell_item_branns_communicator::OnScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
-    }
-};
-
 class spell_item_goblin_gumbo_kettle : public AuraScript
 {
     PrepareAuraScript(spell_item_goblin_gumbo_kettle);
@@ -3919,7 +3892,6 @@ void AddSC_item_spell_scripts()
     RegisterSpellScript(spell_item_titanium_seal_of_dalaran);
     RegisterSpellScript(spell_item_mind_amplify_dish);
     RegisterSpellScript(spell_item_runescroll_of_fortitude);
-    RegisterSpellScript(spell_item_branns_communicator);
     RegisterSpellScript(spell_item_goblin_gumbo_kettle);
     RegisterSpellScript(spell_item_with_mount_speed);
     RegisterSpellScript(spell_item_magic_dust);
