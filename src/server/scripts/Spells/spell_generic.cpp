@@ -4742,14 +4742,11 @@ class spell_gen_basic_campfire : public SpellScript
 
     void ModDest(SpellDestination& dest)
     {
-        if (Unit* caster = GetCaster())
-        {
-            if (caster->GetMap()->GetGameObjectFloor(caster->GetPhaseMask(), caster->GetPositionX(), caster->GetPositionY(), caster->GetPositionZ()) == -G3D::finf())
-            {
-                float ground = caster->GetMap()->GetHeight(dest._position.GetPositionX(), dest._position.GetPositionY(), dest._position.GetPositionZ() + caster->GetCollisionHeight() * 0.5f);
-                dest._position.m_positionZ = ground;
-            }
-        }
+         float dist = GetSpellInfo()->Effects[EFFECT_0].CalcRadius(GetCaster());
+         float angle = GetCaster()->GetOrientation();
+
+         Position pos = GetCaster()->GetNearPosition(dist, angle);
+         dest.Relocate(pos);
     }
 
     void ModifyCookingSkill(SpellEffIndex /*effIndex*/)
@@ -5050,32 +5047,6 @@ class spell_gen_spirit_of_competition_winner : public SpellScript
     }
 };
 
-// 27360 - Lord Valthalak's Amulet
-enum Valthalak
-{
-    SPELL_INSTILL_LORD_VALTHALAK_SPIRIT = 27360,
-    NPC_LORD_VALTHALAK                  = 16042
-};
-
-class spell_gen_valthalak_amulet : public SpellScript
-{
-    PrepareSpellScript(spell_gen_valthalak_amulet)
-
-    SpellCastResult CheckCast()
-    {
-        if (Unit* target = GetExplTargetUnit())
-            if (target->GetEntry() == NPC_LORD_VALTHALAK && target->isDead())
-                return SPELL_CAST_OK;
-
-        return SPELL_FAILED_BAD_TARGETS;
-    }
-
-    void Register() override
-    {
-        OnCheckCast += SpellCheckCastFn(spell_gen_valthalak_amulet::CheckCast);
-    }
-};
-
 enum ScourgeBanner
 {
     GO_COMMAND_TENT = 176210,
@@ -5129,32 +5100,6 @@ class spell_gen_jubling_cooldown : public SpellScript
     }
 };
 
-// 12699 - Yeh'kinya's Bramble
-enum YehkinyaBramble
-{
-    NPC_VALE_SCREECHER       = 5307,
-    NPC_ROGUE_VALE_SCREECHER = 5308
-};
-
-class spell_gen_yehkinya_bramble : public SpellScript
-{
-    PrepareSpellScript(spell_gen_yehkinya_bramble)
-
-    SpellCastResult CheckCast()
-    {
-        if (Unit* target = GetExplTargetUnit())
-            if ((target->GetEntry() == NPC_VALE_SCREECHER || target->GetEntry() == NPC_ROGUE_VALE_SCREECHER) && target->isDead())
-                return SPELL_CAST_OK;
-
-        return SPELL_FAILED_BAD_TARGETS;
-    }
-
-    void Register() override
-    {
-        OnCheckCast += SpellCheckCastFn(spell_gen_yehkinya_bramble::CheckCast);
-    }
-};
-
 // 35244 - Choking Vines
 enum ChokingVines
 {
@@ -5189,42 +5134,22 @@ class spell_gen_choking_vines : public AuraScript
     }
 };
 
-class spell_gen_select_target_dead : public SpellScript
+class spell_gen_dest_caster_summon : public SpellScript
 {
-    PrepareSpellScript(spell_gen_select_target_dead);
+    PrepareSpellScript(spell_gen_dest_caster_summon);
 
-    SpellCastResult CheckRequirement()
+    void ModDest(SpellDestination& dest)
     {
-        if (Unit* target = GetExplTargetUnit())
-            if (!target->IsAlive())
-                return SPELL_CAST_OK;
+        float dist = GetSpellInfo()->Effects[EFFECT_0].CalcRadius(GetCaster());
+        float angle = GetCaster()->GetOrientation();
 
-        return SPELL_FAILED_TARGET_NOT_DEAD;
+        Position pos = GetCaster()->GetNearPosition(dist, angle);
+        dest.Relocate(pos);
     }
 
     void Register() override
     {
-        OnCheckCast += SpellCheckCastFn(spell_gen_select_target_dead::CheckRequirement);
-    }
-};
-
-class spell_gen_target_is_in_combat : public SpellScript
-{
-    PrepareSpellScript(spell_gen_target_is_in_combat);
-
-    SpellCastResult CheckRequirement()
-    {
-        if (Unit* target = GetExplTargetUnit())
-            if (!target->IsInCombat())
-                return SPELL_CAST_OK;
-
-        return SPELL_FAILED_TARGET_IN_COMBAT;
-
-    }
-
-    void Register() override
-    {
-        OnCheckCast += SpellCheckCastFn(spell_gen_target_is_in_combat::CheckRequirement);
+        OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_gen_dest_caster_summon::ModDest, EFFECT_0, TARGET_DEST_CASTER_SUMMON);
     }
 };
 
@@ -5378,12 +5303,8 @@ void AddSC_generic_spell_scripts()
     RegisterSpellScript(spell_gen_curse_of_pain);
     RegisterSpellScript(spell_gen_spirit_of_competition_participant);
     RegisterSpellScript(spell_gen_spirit_of_competition_winner);
-    RegisterSpellScript(spell_gen_valthalak_amulet);
     RegisterSpellScript(spell_gen_planting_scourge_banner);
     RegisterSpellScript(spell_gen_jubling_cooldown);
-    RegisterSpellScript(spell_gen_yehkinya_bramble);
     RegisterSpellScript(spell_gen_choking_vines);
-    RegisterSpellScript(spell_gen_select_target_dead);
-    RegisterSpellScript(spell_gen_target_is_in_combat);
+    RegisterSpellScript(spell_gen_dest_caster_summon);
 }
-
