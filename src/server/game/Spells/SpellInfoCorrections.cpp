@@ -4400,12 +4400,6 @@ void SpellMgr::LoadSpellInfoCorrections()
         spellInfo->Effects[EFFECT_0].TargetA = SpellImplicitTargetInfo(TARGET_UNIT_CASTER);
     });
 
-    // Collect Rookery Egg
-    ApplySpellFix({ 15958 }, [](SpellInfo* spellInfo)
-    {
-        spellInfo->Effects[EFFECT_1].Effect = 0;
-    });
-
     // WotLK Prologue Frozen Shade Visual, temp used to restore visual after Dispersion
     ApplySpellFix({ 53444 }, [](SpellInfo* spellInfo)
     {

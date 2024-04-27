@@ -1488,7 +1488,10 @@ class spell_symbol_of_life_dummy : public SpellScript
 // 52090 Ahunae's Knife
 enum Quest12659Data
 {
+    QUEST_SCALPS        = 12659,
+
     NPC_SCALPS_KC_BUNNY = 28622,
+    SPELL_AHUNAES_KNIFE = 52083
 };
 
 class spell_q12659_ahunaes_knife : public SpellScript
@@ -1505,14 +1508,26 @@ class spell_q12659_ahunaes_knife : public SpellScript
         Player* caster = GetCaster()->ToPlayer();
         if (Creature* target = GetHitCreature())
         {
-            target->DespawnOrUnsummon();
+            target->AddAura(SPELL_AHUNAES_KNIFE, target);
+            target->DespawnOrUnsummon(3s, 0s);
             caster->KilledMonsterCredit(NPC_SCALPS_KC_BUNNY);
         }
+    }
+
+    SpellCastResult CheckQuest()
+    {
+        if (Player* playerCaster = GetCaster()->ToPlayer())
+        {
+            if (playerCaster->GetQuestStatus(QUEST_SCALPS) == QUEST_STATUS_INCOMPLETE)
+                return SPELL_CAST_OK;
+        }
+        return SPELL_FAILED_DONT_REPORT;
     }
 
     void Register() override
     {
         OnEffectHitTarget += SpellEffectFn(spell_q12659_ahunaes_knife::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+        OnCheckCast += SpellCheckCastFn(spell_q12659_ahunaes_knife::CheckQuest);
     }
 };
 
@@ -2419,7 +2434,8 @@ class spell_q4735_collect_rookery_egg : public SpellScript
 
     SpellCastResult CheckCast()
     {
-        if (GameObject* rookery = GetCaster()->FindNearestGameObject(GO_ROOKERY_EGG, 5.0f, true))
+
+        if (GameObject* rookery = GetCaster()->FindNearestGameObject(GO_ROOKERY_EGG, 3.0f, true))
         {
             if (rookery->GetGoState() == GO_STATE_ACTIVE_ALTERNATIVE)
                 return SPELL_CAST_OK;
@@ -2437,17 +2453,10 @@ class spell_q4735_collect_rookery_egg : public SpellScript
         return SPELL_FAILED_DONT_REPORT;
     }
 
-    void HandleActiveObject(SpellEffIndex /*effIndex*/)
-    {
-        if (Player* playerCaster = GetCaster()->ToPlayer())
-            playerCaster->AddItem(ITEM_COLLECTED_DRAGON_EGG, 1);
-    }
-
     void Register() override
     {
         OnCheckCast += SpellCheckCastFn(spell_q4735_collect_rookery_egg::CheckQuest);
         OnCheckCast += SpellCheckCastFn(spell_q4735_collect_rookery_egg::CheckCast);
-        OnEffectHit += SpellEffectFn(spell_q4735_collect_rookery_egg::HandleActiveObject, EFFECT_0, SPELL_EFFECT_ACTIVATE_OBJECT);
     }
 };
 
