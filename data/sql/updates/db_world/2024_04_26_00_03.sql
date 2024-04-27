@@ -23,8 +23,3 @@ INSERT INTO `conditions` (`SourceTypeOrReferenceId`, `SourceGroup`, `SourceEntry
 (17, 0, 32205, 0, 0, 30, 0, 182263, 6, 0, 0, 0, 0, '', 'Distance Required.'),
 (17, 0, 32205, 0, 1, 30, 0, 182264, 6, 0, 0, 0, 0, '', 'Distance Required.'),
 (17, 0, 32205, 0, 2, 30, 0, 182262, 6, 0, 0, 0, 0, '', 'Distance Required.');
-
-DELETE FROM `spell_script_names` WHERE `ScriptName`='spell_gen_dest_caster_summon';
-INSERT INTO `spell_script_names` (`spell_id`,`ScriptName`) VALUES
-(32205, 'spell_gen_dest_caster_summon');
-
