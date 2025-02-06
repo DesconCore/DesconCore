@@ -4765,6 +4765,14 @@ class spell_gen_basic_campfire : public SpellScript
     }
 };
 
+enum Purge
+{
+    QUEST_FLIGHT_OF_THE_WINTERGARDE_DEFENDER  = 12237,
+
+    NPC_HELPLESS_VILLAGER_A                   = 27315,
+    NPC_HELPLESS_VILLAGER_B                   = 27336
+};
+
 class spell_gen_purge_vehicle_control : public SpellScript
 {
     PrepareSpellScript(spell_gen_purge_vehicle_control);
@@ -4781,6 +4789,22 @@ class spell_gen_purge_vehicle_control : public SpellScript
                 else
                     ++iter;
             }
+        }
+
+        // Validates if the player has the quest
+        // Leaving the zone with passenger will result in despawn
+        Player* owner = GetCaster()->ToPlayer();
+
+        if (owner->GetTypeId() != TYPEID_PLAYER || !owner->HasQuest(QUEST_FLIGHT_OF_THE_WINTERGARDE_DEFENDER))
+            return;
+
+        if (owner)
+        {
+            uint32 cEntry[2] = { NPC_HELPLESS_VILLAGER_A, NPC_HELPLESS_VILLAGER_B };
+
+            for (uint8 i = 0; i < 2; i++)
+                 if (Creature* villager = GetCaster()->FindNearestCreature(cEntry[i], 3.0f, true))
+                     villager->DespawnOnEvade();
         }
     }
 

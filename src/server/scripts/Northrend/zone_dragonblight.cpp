@@ -646,9 +646,13 @@ enum WintergardeGryphon
     NPC_HELPLESS_VILLAGER_A                     = 27315,
     NPC_HELPLESS_VILLAGER_B                     = 27336,
 
+    SAY_GET_VILLAGER                            = 1,
+
     EVENT_VEHICLE_GET                           = 1,
     EVENT_TAKE_OFF                              = 2,
-    EVENT_GET_VILLAGER                          = 3,
+    EVENT_OFF_VILLAGER                          = 3,
+    EVENT_OFF_GRYPHON                           = 4,
+    EVENT_CHEER_VILLAGER                        = 5,
 
     EVENT_PHASE_FEAR                            = 1,
     EVENT_PHASE_VEHICLE                         = 2,
@@ -667,6 +671,7 @@ public:
     npc_wintergarde_gryphon(Creature* creature) : VehicleAI(creature)
     {
         creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+        events.ScheduleEvent(EVENT_OFF_GRYPHON, 30s);
     }
 
     void JustDied(Unit* /*killer*/) override
@@ -701,14 +706,17 @@ public:
                     if (Creature* seat = villager->ToCreature())
                     {
                         seat->ExitVehicle();
-                        seat->DespawnOrUnsummon();
+                        seat->DespawnOnEvade();
                     }
                 }
 
             events.ScheduleEvent(EVENT_TAKE_OFF, 2s);
             me->CastSpell(passenger, VEHICLE_SPELL_PARACHUTE, true);
             passenger->RemoveAurasDueToSpell(SPELL_WARNING_GRYPHON);
+            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
         }
+        else
+            events.CancelEvent(EVENT_OFF_GRYPHON);
     }
 
     Creature* getVillager() { return ObjectAccessor::GetCreature(*me, villagerGUID); }
@@ -738,13 +746,26 @@ public:
                     me->GetMotionMaster()->MovePoint(POINT_TAKE_OFF, pos);
                     break;
                 }
-                case EVENT_GET_VILLAGER:
+                case EVENT_OFF_VILLAGER:
                 {
-                    if (getVillager())
+                    if (Creature* villager = getVillager())
                     {
-                        getVillager()->GetMotionMaster()->MovePoint(0, 3660.0f, -706.4f, 215.0f);
-                        getVillager()->DespawnOrUnsummon(7s, 0s);
+                        villager->GetMotionMaster()->MovePoint(0, 3660.0f, -706.4f, 215.0f);
+                        villager->DespawnOrUnsummon(7s, 0s);
                     }
+                    break;
+                }
+                case EVENT_OFF_GRYPHON:
+                    me->DespawnOrUnsummon();
+                    break;
+                case EVENT_CHEER_VILLAGER:
+                {
+                    if (Creature* villager = getVillager())
+                    {
+                        villager->SetFacingToObject(me);
+                        villager->HandleEmoteCommand(EMOTE_ONESHOT_CHEER);
+                    }
+                    events.ScheduleEvent(EVENT_OFF_VILLAGER, 3s);
                     break;
                 }
             }
@@ -760,12 +781,13 @@ public:
             if (Unit* villager = gryphon->GetPassenger(1))
             {
                 villager->ExitVehicle();
-                villager->GetMotionMaster()->Clear(false);
+                float angle = me->GetOrientation();
+                float x = me->GetPositionX() + cos(angle) * 4.0f;
+                float y = me->GetPositionY() + std::sin(angle) * 4.0f;
+                villager->GetMotionMaster()->MoveJump(x, y, 215.41f, 10.0f, 2.0f);
                 villager->GetMotionMaster()->MoveIdle();
-                villager->SetCanFly(false); // prevents movement in flight
                 villagerGUID = villager->GetGUID();
-                villager->HandleEmoteCommand(EMOTE_ONESHOT_CHEER);
-                events.ScheduleEvent(EVENT_GET_VILLAGER, 3s);
+                events.ScheduleEvent(EVENT_CHEER_VILLAGER, 2s);
             }
     }
 private:
@@ -792,7 +814,8 @@ class spell_q12237_rescue_villager : public SpellScript
             result = SPELL_FAILED_CUSTOM_ERROR;
         }
 
-        if (!GetCaster()->FindNearestCreature(NPC_HELPLESS_VILLAGER_A, 5.0f) && !GetCaster()->FindNearestCreature(NPC_HELPLESS_VILLAGER_B, 5.0f))
+        if (!GetCaster()->FindNearestCreature(NPC_HELPLESS_VILLAGER_A, 5.0f) &&
+            !GetCaster()->FindNearestCreature(NPC_HELPLESS_VILLAGER_B, 5.0f))
         {
             extension = SPELL_CUSTOM_ERROR_MUST_BE_NEAR_HELPLESS_VILLAGER;
             result = SPELL_FAILED_CUSTOM_ERROR;
@@ -818,8 +841,15 @@ class spell_q12237_rescue_villager : public SpellScript
 
     void HandleScript(SpellEffIndex /*effIndex*/)
     {
+        Unit* caster = GetCaster();
+        Creature* gryphon = caster->ToCreature();
+
         if (Unit* target = GetHitUnit())
-            target->CastSpell(GetCaster(), uint32(GetEffectValue()), true);
+            target->CastSpell(caster, uint32(GetEffectValue()), true);
+
+        if (Unit* player = caster->GetVehicleKit()->GetPassenger(0))
+            if (Player* Owner = player->ToPlayer())
+                sCreatureTextMgr->SendChat(gryphon, SAY_GET_VILLAGER, nullptr, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, Owner);
     }
 
     void Register() override

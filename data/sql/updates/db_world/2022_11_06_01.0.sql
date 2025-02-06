@@ -47,7 +47,13 @@ INSERT INTO `creature_text` (`CreatureID`,`GroupID`,`ID`,`Text`,`Type`,`Language
 SET @NPC_WINTERGARDE_GRYPHON := 27258;
 DELETE FROM `creature_text` WHERE `CreatureID`=@NPC_WINTERGARDE_GRYPHON;
 INSERT INTO `creature_text` (`CreatureID`,`GroupID`,`ID`,`Text`,`Type`,`Language`,`Probability`,`Emote`,`Duration`,`Sound`,`BroadcastTextId`, `TextRange`, `comment`) VALUES
-(@NPC_WINTERGARDE_GRYPHON, 0, 0, 'Return to Wintergarde or the Carrion Fields or your gryphon will drop you!', 42, 0, 100, 0, 0, 0, 26372, 0, 'Area Warning');
+(@NPC_WINTERGARDE_GRYPHON, 0, 0, 'Return to Wintergarde or the Carrion Fields or your gryphon will drop you!', 42, 0, 100, 0, 0, 0, 26372, 0, 'Area Warning'),
+(@NPC_WINTERGARDE_GRYPHON, 1, 0, 'Come with me if you want to live.', 12, 0, 100, 0, 0, 0, 26366, 0, 'SAY_GET_VILLAGER'),
+(@NPC_WINTERGARDE_GRYPHON, 1, 1, 'Get on!', 12, 0, 100, 0, 0, 0, 26367, 0, 'SAY_GET_VILLAGER'),
+(@NPC_WINTERGARDE_GRYPHON, 1, 2, 'Take my hand, villager!', 12, 0, 100, 0, 0, 0, 26368, 0, 'SAY_GET_VILLAGER'),
+(@NPC_WINTERGARDE_GRYPHON, 1, 3, 'I am here to save you, friend!', 12, 0, 100, 0, 0, 0, 26369, 0, 'SAY_GET_VILLAGER'),
+(@NPC_WINTERGARDE_GRYPHON, 1, 4, 'Get on the back of my gryphon, citizen!', 12, 0, 100, 0, 0, 0, 26370, 0, 'SAY_GET_VILLAGER'),
+(@NPC_WINTERGARDE_GRYPHON, 1, 5, 'Hurry! Climb aboard!', 12, 0, 100, 0, 0, 0, 26371, 0, 'SAY_GET_VILLAGER');
 
 SET @NPC_BONE_GRYPHON := 29414;
 DELETE FROM `creature_text` WHERE `CreatureID`=@NPC_BONE_GRYPHON;
