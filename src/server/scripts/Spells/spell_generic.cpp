@@ -5176,6 +5176,27 @@ class spell_gen_dest_caster_summon : public SpellScript
     }
 };
 
+class spell_gen__pvp_master : public SpellScript
+{
+    PrepareSpellScript(spell_gen__pvp_master);
+
+    bool Validate(SpellInfo const* spellInfo) override
+    {
+        return ValidateSpellInfo({ uint32(spellInfo->GetEffect(EFFECT_0).CalcValue()) });
+    }
+
+    void HandleApplyAura(SpellEffIndex /*effIndex*/)
+    {
+        uint32 spellId = GetSpellInfo()->Effects[EFFECT_0].CalcValue();
+        GetCaster()->CastSpell((Unit*)nullptr, spellId, true, nullptr);
+    }
+
+    void Register() override
+    {
+        OnEffectHitTarget += SpellEffectFn(spell_gen__pvp_master::HandleApplyAura, EFFECT_0, SPELL_EFFECT_APPLY_AURA);
+    }
+};
+
 void AddSC_generic_spell_scripts()
 {
     RegisterSpellScript(spell_silithyst);
@@ -5330,4 +5351,5 @@ void AddSC_generic_spell_scripts()
     RegisterSpellScript(spell_gen_jubling_cooldown);
     RegisterSpellScript(spell_gen_choking_vines);
     RegisterSpellScript(spell_gen_dest_caster_summon);
+    RegisterSpellScript(spell_gen__pvp_master);
 }

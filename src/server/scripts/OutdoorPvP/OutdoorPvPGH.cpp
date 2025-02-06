@@ -29,6 +29,21 @@ OutdoorPvPGH::OutdoorPvPGH()
     _typeId = OUTDOOR_PVP_GH;
 }
 
+void OutdoorPvPGH::HandleKillImpl(Player* player, Unit* killed)
+{
+    // Don't reward player if killed has resurrection sickness
+    if (killed->GetTypeId() != TYPEID_PLAYER || killed->HasAura(SPELL_RESURRECTION_SICKNESS))
+        return;
+
+    if ((player->GetTeamId() == TEAM_ALLIANCE && killed->ToPlayer()->GetTeamId() != TEAM_ALLIANCE &&
+        player->GetQuestStatus(QUEST_KEEP_THEM_AT_BAY_A) == QUEST_STATUS_INCOMPLETE) ||
+        (player->GetTeamId() == TEAM_HORDE && killed->ToPlayer()->GetTeamId() != TEAM_HORDE &&
+         player->GetQuestStatus(QUEST_KEEP_THEM_AT_BAY_H) == QUEST_STATUS_INCOMPLETE))
+    {
+        player->CastSpell((Unit*)nullptr, SPELL_VENTURE_PVP_MASTER, true);
+    }
+}
+
 bool OutdoorPvPGH::SetupOutdoorPvP()
 {
     RegisterZone(GH_ZONE);
