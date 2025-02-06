@@ -2529,6 +2529,28 @@ class spell_q9847_a_spirit_ally : public SpellScript
     }
 };
 
+class spell_q11146_capture_raptor : public AuraScript
+{
+    PrepareAuraScript(spell_q11146_capture_raptor);
+
+    void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        if (GetTargetApplication()->GetRemoveMode() != AURA_REMOVE_BY_EXPIRE)
+            return;
+    }
+
+    void CalcPeriodic(AuraEffect const* /*aurEff*/, bool& /*isPeriodic*/, int32& amplitude)
+    {
+        amplitude = 2 * IN_MILLISECONDS;
+    }
+
+    void Register() override
+    {
+        OnEffectRemove += AuraEffectRemoveFn(spell_q11146_capture_raptor::HandleRemove, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL, AURA_EFFECT_HANDLE_REAL);
+        DoEffectCalcPeriodic += AuraEffectCalcPeriodicFn(spell_q11146_capture_raptor::CalcPeriodic, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL);
+    }
+};
+
 void AddSC_quest_spell_scripts()
 {
     RegisterSpellAndAuraScriptPair(spell_q11065_wrangle_some_aether_rays, spell_q11065_wrangle_some_aether_rays_aura);
@@ -2603,5 +2625,5 @@ void AddSC_quest_spell_scripts()
     RegisterSpellScript(spell_q10839_rod_of_purification);
     RegisterSpellScript(spell_q10651_q10692_book_of_fel_names);
     RegisterSpellScript(spell_q9847_a_spirit_ally);
+    RegisterSpellScript(spell_q11146_capture_raptor);
 }
-

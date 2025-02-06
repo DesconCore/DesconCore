@@ -3045,7 +3045,7 @@ class spell_item_demon_broiled_surprise : public SpellScript
 
 enum CompleteRaptorCapture
 {
-    SPELL_RAPTOR_CAPTURE_CREDIT     = 42337,
+    SPELL_RAPTOR_CAPTURE_CREDIT     = 42337
 };
 
 class spell_item_complete_raptor_capture : public SpellScript
@@ -3060,12 +3060,19 @@ class spell_item_complete_raptor_capture : public SpellScript
     void HandleDummy(SpellEffIndex /* effIndex */)
     {
         Unit* caster = GetCaster();
-        if (GetHitCreature())
+        Creature* bloodfen = GetHitCreature();
+        Player* player = caster->ToPlayer();
+
+        if (bloodfen)
         {
-            GetHitCreature()->DespawnOrUnsummon();
+            bloodfen->CombatStop(false);
+            bloodfen->DespawnOrUnsummon(4s, 0s);
+            bloodfen->SetReactState(REACT_PASSIVE);
+            bloodfen->SetUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
+            bloodfen->SetFacingToObject(caster);
 
             //cast spell Raptor Capture Credit
-            caster->CastSpell(caster, SPELL_RAPTOR_CAPTURE_CREDIT, true, nullptr);
+            bloodfen->CastSpell(player, SPELL_RAPTOR_CAPTURE_CREDIT, true, nullptr);
         }
     }
 
@@ -4006,4 +4013,3 @@ void AddSC_item_spell_scripts()
     RegisterSpellScript(spell_item_worn_troll_dice);
     RegisterSpellScript(spell_item_venomhide_feed);
 }
-
