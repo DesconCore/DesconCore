@@ -51,6 +51,7 @@ enum VehicleFlags
 enum VehicleSpells
 {
     VEHICLE_SPELL_RIDE_HARDCODED                 = 46598,
+    SPELL_RIDE_FLAMEBRINGER                      = 48600,
     VEHICLE_SPELL_PARACHUTE                      = 45472,
 
     VEHICLE_SPELL_GEIST_CONTROL_END              = 58119,

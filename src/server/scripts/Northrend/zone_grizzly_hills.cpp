@@ -1298,6 +1298,110 @@ class spell_frog_kiss : public SpellScript
     }
 };
 
+enum QuestTheThaneOfVoldrune
+{
+    SPELL_SUMMON_FLAMEBRINGER    = 48606,
+    SPELL_WARNING_FLAMEBRINGER   = 48694,
+
+    GOSSIP_FLAMEBRINGER          = 9512,
+
+    POINT_DESPAWN                = 1,
+
+    EVENT_TAKE_OFF               = 1
+};
+
+Position const BringerHomePos = { 2793.09f, -2506.13f, 133.1605f, 0.418879f };
+
+class npc_flamebringer : public VehicleAI
+{
+public:
+    npc_flamebringer(Creature* creature) : VehicleAI(creature) {}
+
+    void sGossipSelect(Player* player, uint32 menuId, uint32 gossipListId) override
+    {
+        if (menuId == GOSSIP_FLAMEBRINGER && gossipListId == 0)
+        {
+            DoCast(me, SPELL_SUMMON_FLAMEBRINGER);
+            player->PlayerTalkClass->SendCloseGossip();
+        }
+    }
+
+    void TakeJump(Unit* passenger)
+    {
+        Position pos = me->GetPosition();
+        pos.m_positionY -= 10.0f;
+        pos.m_positionZ += 15.0f;
+        me->SetPosition(pos);
+        passenger->SetSpeedRate(MOVE_RUN, 5.0f);
+    }
+
+    void MovementInform(uint32 type, uint32 id) override
+    {
+        if (type == POINT_MOTION_TYPE && id == POINT_DESPAWN)
+            me->DespawnOrUnsummon(1s, 0s);
+    }
+
+    void PassengerBoarded(Unit* passenger, int8 /*seatId*/, bool apply) override
+    {
+        if (!apply)
+        {
+            events.ScheduleEvent(EVENT_TAKE_OFF, 1s);
+            me->CastSpell(passenger, VEHICLE_SPELL_PARACHUTE, true);
+            passenger->RemoveAurasDueToSpell(SPELL_WARNING_FLAMEBRINGER);
+            TakeJump(passenger);
+            RemoveVehicleFlag();
+        }
+        else
+            me->RemoveNpcFlag(UNIT_NPC_FLAG_GOSSIP);
+    }
+
+    void UpdateAI(uint32 diff) override
+    {
+        events.Update(diff);
+
+        while (uint32 eventId = events.ExecuteEvent())
+        {
+            switch (eventId)
+            {
+                case EVENT_TAKE_OFF:
+                {
+                    me->SetCanFly(true);
+                    me->SetDisableGravity(true);
+                    me->SetUnitMovementFlags(MOVEMENTFLAG_FLYING);
+                    me->GetMotionMaster()->MovePoint(POINT_DESPAWN, BringerHomePos);
+                    break;
+                }
+            }
+        }
+    }
+};
+
+class spell_summon_flamebringer : public SpellScript
+{
+    PrepareSpellScript(spell_summon_flamebringer);
+
+    void HandleSummon(SpellEffIndex effIndex)
+    {
+        PreventHitDefaultEffect(effIndex);
+        uint32 entry = uint32(GetSpellInfo()->Effects[effIndex].MiscValue);
+        Position pos = GetCaster()->GetPosition();
+        pos.m_orientation += 3.8f;
+
+        if (Creature* flamebringer = GetCaster()->SummonCreature(entry, pos))
+        {
+            if (Player* player = GetCaster()->SelectNearestPlayer(5.0f))
+            {
+                player->EnterVehicleFlamebringer(flamebringer);
+            }
+        }
+    }
+
+    void Register() override
+    {
+        OnEffectHit += SpellEffectFn(spell_summon_flamebringer::HandleSummon, EFFECT_0, SPELL_EFFECT_SUMMON);
+    }
+};
+
 void AddSC_grizzly_hills()
 {
     // Theirs
@@ -1319,5 +1423,7 @@ void AddSC_grizzly_hills()
     RegisterSpellScript(spell_q12227_outhouse_groans);
     RegisterSpellScript(spell_q12227_camera_shake);
     RegisterSpellScript(spell_frog_kiss);
+    RegisterCreatureAI(npc_flamebringer);
+    RegisterSpellScript(spell_summon_flamebringer);
 }
 

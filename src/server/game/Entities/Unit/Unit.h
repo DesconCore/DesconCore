@@ -2459,6 +2459,7 @@ public:
 
     bool HandleSpellClick(Unit* clicker, int8 seatId = -1);
     void EnterVehicle(Unit* base, int8 seatId = -1);
+    void EnterVehicleFlamebringer(Unit* base, int8 seatId = -1);
     void EnterVehicleUnattackable(Unit* base, int8 seatId = -1);
     void ExitVehicle(Position const* exitPosition = nullptr);
     void ChangeSeat(int8 seatId, bool next = true);

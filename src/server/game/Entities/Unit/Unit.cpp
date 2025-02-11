@@ -14317,7 +14317,12 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
                     stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_MOUNTED_FLIGHT_SPEED_ALWAYS);
                 }
                 else             // Use not mount (shapeshift for example) auras (should stack)
+                {
                     main_speed_mod  = GetTotalAuraModifier(SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED) + GetTotalAuraModifier(SPELL_AURA_MOD_INCREASE_VEHICLE_FLIGHT_SPEED);
+
+                    if (GetShapeshiftForm() != FORM_FLIGHT_EPIC || GetShapeshiftForm() != FORM_FLIGHT)
+                        stack_bonus = GetTotalAuraMultiplier(SPELL_AURA_MOD_MOUNTED_FLIGHT_SPEED_ALWAYS);
+                }
 
                 non_stack_bonus += GetMaxPositiveAuraModifier(SPELL_AURA_MOD_FLIGHT_SPEED_NOT_STACK) / 100.0f;
 
@@ -19890,6 +19895,16 @@ bool Unit::HandleSpellClick(Unit* clicker, int8 seatId)
 void Unit::EnterVehicle(Unit* base, int8 seatId)
 {
     CastCustomSpell(VEHICLE_SPELL_RIDE_HARDCODED, SPELLVALUE_BASE_POINT0, seatId + 1, base, TRIGGERED_IGNORE_CASTER_MOUNTED_OR_ON_VEHICLE);
+
+    if (Player* player = ToPlayer())
+    {
+        sScriptMgr->AnticheatSetUnderACKmount(player);
+    }
+}
+
+void Unit::EnterVehicleFlamebringer(Unit* base, int8 seatId)
+{
+    CastCustomSpell(SPELL_RIDE_FLAMEBRINGER, SPELLVALUE_BASE_POINT0, seatId + 1, base, TRIGGERED_IGNORE_CASTER_MOUNTED_OR_ON_VEHICLE);
 
     if (Player* player = ToPlayer())
     {
