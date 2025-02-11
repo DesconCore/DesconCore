@@ -320,6 +320,7 @@ void VehicleAI::CheckConditions(uint32 diff)
                             if (!sConditionMgr->IsObjectMeetToConditions(player, me, conditions))
                             {
                                 player->ExitVehicle();
+
                                 return; // check other pessanger in next tick
                             }
                         }
@@ -337,4 +338,12 @@ int32 VehicleAI::Permissible(Creature const* creature)
         return PERMIT_BASE_SPECIAL;
 
     return PERMIT_BASE_NO;
+}
+
+/**
+ * @brief Remove a flag "Spell Click"
+ */
+void VehicleAI::RemoveVehicleFlag()
+{
+    me->RemoveNpcFlag(UNIT_NPC_FLAG_SPELLCLICK);
 }

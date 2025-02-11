@@ -114,6 +114,9 @@ private:
     uint32 m_ConditionsTimer;
     bool m_DoDismiss;
     uint32 m_DismissTimer;
+
+protected:
+    void RemoveVehicleFlag();
 };
 
 #endif
