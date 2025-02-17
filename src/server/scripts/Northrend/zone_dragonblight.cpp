@@ -670,13 +670,21 @@ class npc_wintergarde_gryphon : public VehicleAI
 public:
     npc_wintergarde_gryphon(Creature* creature) : VehicleAI(creature)
     {
-        creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+        creature->SetUnitFlag(UNIT_FLAG_NOT_SELECTABLE);
         events.ScheduleEvent(EVENT_OFF_GRYPHON, 30s);
     }
 
     void JustDied(Unit* /*killer*/) override
     {
         me->DespawnOrUnsummon(3s, 0s);
+    }
+
+    void TakeJump(Unit* passenger)
+    {
+        Position pos = me->GetPosition();
+        pos.m_positionZ += 10.0f;
+        me->NearTeleportTo(pos);
+        passenger->SetSpeedRate(MOVE_RUN, 5.0f);
     }
 
     void IsSummonedBy(WorldObject* summoner) override
@@ -710,10 +718,11 @@ public:
                     }
                 }
 
+            TakeJump(passenger);
             events.ScheduleEvent(EVENT_TAKE_OFF, 2s);
             me->CastSpell(passenger, VEHICLE_SPELL_PARACHUTE, true);
             passenger->RemoveAurasDueToSpell(SPELL_WARNING_GRYPHON);
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+            RemoveVehicleFlag();
         }
         else
             events.CancelEvent(EVENT_OFF_GRYPHON);
@@ -732,7 +741,7 @@ public:
                 {
                     me->SetDisableGravity(false);
                     me->SetHover(false);
-                    me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                    me->RemoveUnitFlag(UNIT_FLAG_NOT_SELECTABLE);
                     break;
                 }
                 case EVENT_TAKE_OFF:
