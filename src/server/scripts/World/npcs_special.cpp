@@ -2648,10 +2648,10 @@ enum kilroggSpell
     SPELL_TRIGGER_EYE_OF_KILROGG_PASSIVE         = 2585
 };
 
-struct npc_eye_of_kilrogg : public ScriptedAI
+struct npc_eye_of_kilrogg : public PossessedAI
 {
 public:
-    npc_eye_of_kilrogg(Creature* creature) : ScriptedAI(creature) { }
+    npc_eye_of_kilrogg(Creature* creature) : PossessedAI(creature) { }
 
     void Reset() override
     {
@@ -2661,9 +2661,17 @@ public:
             {
                 if (me->GetMapId() == 530 || me->GetMapId() == 571)
                     me->AddAura(SPELL_EYE_OF_KILROGG_PASSIVE, me);
-
-                me->CastSpell(me, SPELL_TRIGGER_EYE_OF_KILROGG_PASSIVE, true);
             }
+        }
+
+        DoCastSelf(SPELL_TRIGGER_EYE_OF_KILROGG_PASSIVE);
+    }
+
+    void OnCharmed(bool apply) override
+    {
+        if (!apply)
+        {
+            me->GetCharmerOrOwner()->InterruptNonMeleeSpells(false);
         }
     }
 };
