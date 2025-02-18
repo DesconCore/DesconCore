@@ -16,6 +16,7 @@
  */
 
 #include "InstanceScript.h"
+#include "Chat.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
 #include "GameObject.h"
@@ -54,10 +55,25 @@ void InstanceScript::SaveToDB()
     CharacterDatabase.Execute(stmt);
 }
 
+void InstanceScript::OnPlayerEnter(Player* player)
+{
+    if (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_GROUP) && IsTwoFactionInstance())
+        player->SetFaction((_teamIdInInstance == TEAM_HORDE) ? 1610 /*FACTION_HORDE*/ : 1 /*FACTION_ALLIANCE*/);
+}
+
+void InstanceScript::OnPlayerLeave(Player* player)
+{
+    if (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_GROUP) && IsTwoFactionInstance())
+        player->SetFactionForRace(player->getRace());
+}
+
 void InstanceScript::OnCreatureCreate(Creature* creature)
 {
     AddObject(creature);
     AddMinion(creature);
+
+    if (creature->IsSummon())
+        SetSummoner(creature);
 }
 
 void InstanceScript::OnCreatureRemove(Creature* creature)
@@ -189,6 +205,15 @@ void InstanceScript::LoadObjectData(ObjectData const* data, ObjectInfoMap& objec
     while (data->entry)
     {
         objectInfo[data->entry] = data->type;
+        ++data;
+    }
+}
+
+void InstanceScript::LoadSummonData(ObjectData const* data)
+{
+    while (data->entry)
+    {
+        _summonInfo[data->entry] = data->type;
         ++data;
     }
 }
@@ -347,6 +372,16 @@ void InstanceScript::RemoveMinion(Creature* minion)
     AddMinion(minion, false);
 }
 
+void InstanceScript::SetSummoner(Creature* creature)
+{
+    auto const& summonData = _summonInfo.find(creature->GetEntry());
+
+    if (summonData != _summonInfo.end())
+        if (Creature* summoner = GetCreature(summonData->second))
+            if (summoner->IsAIEnabled)
+                summoner->AI()->JustSummoned(creature);
+}
+
 bool InstanceScript::SetBossState(uint32 id, EncounterState state)
 {
     if (id < bosses.size())
@@ -392,7 +427,11 @@ void InstanceScript::StorePersistentData(uint32 index, uint32 data)
         return;
     }
 
-    persistentData[index] = data;
+    if (persistentData[index] != data)
+    {
+        persistentData[index] = data;
+        SaveToDB();
+    }
 }
 
 void InstanceScript::DoForAllMinions(uint32 id, std::function<void(Creature*)> exec)
@@ -557,6 +596,12 @@ void InstanceScript::DoRespawnGameObject(ObjectGuid uiGuid, uint32 uiTimeToDespa
         LOG_DEBUG("scripts", "InstanceScript: DoRespawnGameObject failed");
 }
 
+void InstanceScript::DoRespawnGameObject(uint32 type)
+{
+    if (GameObject* go = instance->GetGameObject(GetObjectGuid(type)))
+        go->Respawn();
+}
+
 void InstanceScript::DoRespawnCreature(ObjectGuid guid, bool force)
 {
     if (Creature* creature = instance->GetCreature(guid))
@@ -602,7 +647,7 @@ void InstanceScript::DoSendNotifyToInstance(char const* format, ...)
 
         instance->DoForAllPlayers([&, buff](Player* player)
         {
-            player->GetSession()->SendNotification("%s", buff);
+            ChatHandler(player->GetSession()).SendNotification("{}", buff);
         });
     }
 }
@@ -678,7 +723,7 @@ void InstanceScript::DoCastSpellOnPlayer(Player* player, uint32 spell, bool incl
     for (auto itr2 = player->m_Controlled.begin(); itr2 != player->m_Controlled.end(); ++itr2)
     {
         if (Unit* controlled = *itr2)
-            if (controlled->IsInWorld() && controlled->GetTypeId() == TYPEID_UNIT)
+            if (controlled->IsInWorld() && controlled->IsCreature())
                 controlled->CastSpell(player, spell, true);
     }
 }
@@ -760,6 +805,24 @@ void InstanceScript::LoadInstanceSavedGameobjectStateData()
     }
 }
 
+bool InstanceScript::AllBossesDone() const
+{
+    for (auto const& boss : bosses)
+        if (boss.state != DONE)
+            return false;
+
+    return true;
+}
+
+bool InstanceScript::AllBossesDone(std::initializer_list<uint32> bossIds) const
+{
+    for (auto const& bossId : bossIds)
+        if (!IsBossDone(bossId))
+            return false;
+
+    return true;
+}
+
 std::string InstanceScript::GetBossStateName(uint8 state)
 {
     // See enum EncounterState in InstanceScript.h
@@ -799,6 +862,24 @@ bool InstanceHasScript(WorldObject const* obj, char const* scriptName)
     if (InstanceMap* instance = obj->GetMap()->ToInstanceMap())
     {
         return instance->GetScriptName() == scriptName;
+    }
+
+    return false;
+}
+
+bool InstanceScript::IsTwoFactionInstance() const
+{
+    switch (instance->GetId())
+    {
+        case 540: // Shattered Halls
+        case 576: // Nexus
+        case 631: // Icecrown Citadel
+        case 632: // Forge of Souls
+        case 649: // Trial of the Champion
+        case 650: // Trial of the Crusader
+        case 658: // Pit of Saron
+        case 668: // Halls of Reflection
+            return true;
     }
 
     return false;

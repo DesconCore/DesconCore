@@ -31,7 +31,7 @@ enum Spells
 {
     SPELL_BRAIN_WASH_TOTEM          = 24262,
     SPELL_POWERFULL_HEALING_WARD    = 24309,
-    SPELL_HEX                       = 24053,
+    SPELL_HEX                       = 17172,
     SPELL_DELUSIONS_OF_JINDO        = 24306,
     SPELL_SUMMON_SHADE_OF_JINDO     = 24308,
     SPELL_BANISH                    = 24466,
@@ -94,7 +94,7 @@ struct boss_jindo : public BossAI
 
     void EnterEvadeMode(EvadeReason evadeReason) override
     {
-        if (_EnterEvadeMode(evadeReason))
+        if (CreatureAI::_EnterEvadeMode(evadeReason))
         {
             Reset();
             me->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_DANCE);
@@ -151,24 +151,6 @@ struct boss_jindo : public BossAI
         }
 
         DoMeleeAttackIfReady();
-    }
-
-    bool CanAIAttack(Unit const* target) const override
-    {
-        if (me->GetThreatMgr().GetThreatListSize() > 1)
-        {
-            ThreatContainer::StorageType::const_iterator lastRef = me->GetThreatMgr().GetOnlineContainer().GetThreatList().end();
-            --lastRef;
-            if (Unit* lastTarget = (*lastRef)->getTarget())
-            {
-                if (lastTarget != target)
-                {
-                    return !target->HasAura(SPELL_HEX);
-                }
-            }
-        }
-
-        return true;
     }
 
 private:
@@ -322,4 +304,3 @@ void AddSC_boss_jindo()
     RegisterSpellScript(spell_random_aggro);
     RegisterSpellScript(spell_delusions_of_jindo);
 }
-

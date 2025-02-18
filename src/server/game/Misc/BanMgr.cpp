@@ -17,6 +17,7 @@
 
 #include "BanMgr.h"
 #include "AccountMgr.h"
+#include "Chat.h"
 #include "DatabaseEnv.h"
 #include "GameTime.h"
 #include "Language.h"
@@ -25,6 +26,7 @@
 #include "ScriptMgr.h"
 #include "World.h"
 #include "WorldSession.h"
+#include "WorldSessionMgr.h"
 
 BanMgr* BanMgr::instance()
 {
@@ -68,11 +70,11 @@ BanReturn BanMgr::BanAccount(std::string const& AccountName, std::string const& 
     stmt->SetData(3, Reason);
     trans->Append(stmt);
 
-    if (WorldSession* session = sWorld->FindSession(AccountID))
+    if (WorldSession* session = sWorldSessionMgr->FindSession(AccountID))
         if (session->GetPlayerName() != Author)
             session->KickPlayer("Ban Account at condition 'FindSession(account)->GetPlayerName() != author'");
 
-    if (WorldSession* session = sWorld->FindOfflineSession(AccountID))
+    if (WorldSession* session = sWorldSessionMgr->FindOfflineSession(AccountID))
         if (session->GetPlayerName() != Author)
             session->KickPlayer("Ban Account at condition 'FindOfflineSession(account)->GetPlayerName() != author'");
 
@@ -86,9 +88,9 @@ BanReturn BanMgr::BanAccount(std::string const& AccountName, std::string const& 
             IsPermanetly = false;
 
         if (!IsPermanetly)
-            sWorld->SendWorldText(LANG_BAN_ACCOUNT_YOUBANNEDMESSAGE_WORLD, Author.c_str(), AccountName.c_str(), secsToTimeString(TimeStringToSecs(Duration), true).c_str(), Reason.c_str());
+            ChatHandler(nullptr).SendWorldText(LANG_BAN_ACCOUNT_YOUBANNEDMESSAGE_WORLD, Author, AccountName, secsToTimeString(TimeStringToSecs(Duration), true), Reason);
         else
-            sWorld->SendWorldText(LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD, Author.c_str(), AccountName.c_str(), Reason.c_str());
+            ChatHandler(nullptr).SendWorldText(LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD, Author, AccountName, Reason);
     }
 
     return BAN_SUCCESS;
@@ -130,11 +132,11 @@ BanReturn BanMgr::BanAccountByPlayerName(std::string const& CharacterName, std::
     stmt->SetData(3, Reason);
     trans->Append(stmt);
 
-    if (WorldSession* session = sWorld->FindSession(AccountID))
+    if (WorldSession* session = sWorldSessionMgr->FindSession(AccountID))
         if (session->GetPlayerName() != Author)
             session->KickPlayer("Ban Account at condition 'FindSession(account)->GetPlayerName() != author'");
 
-    if (WorldSession* session = sWorld->FindOfflineSession(AccountID))
+    if (WorldSession* session = sWorldSessionMgr->FindOfflineSession(AccountID))
         if (session->GetPlayerName() != Author)
             session->KickPlayer("Ban Account at condition 'FindOfflineSession(account)->GetPlayerName() != author'");
 
@@ -152,9 +154,9 @@ BanReturn BanMgr::BanAccountByPlayerName(std::string const& CharacterName, std::
         AccountMgr::GetName(AccountID, AccountName);
 
         if (!IsPermanetly)
-            sWorld->SendWorldText(LANG_BAN_ACCOUNT_YOUBANNEDMESSAGE_WORLD, Author.c_str(), AccountName.c_str(), secsToTimeString(TimeStringToSecs(Duration), true).c_str(), Reason.c_str());
+            ChatHandler(nullptr).SendWorldText(LANG_BAN_ACCOUNT_YOUBANNEDMESSAGE_WORLD, Author, AccountName, secsToTimeString(TimeStringToSecs(Duration), true), Reason);
         else
-            sWorld->SendWorldText(LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD, Author.c_str(), AccountName.c_str(), Reason.c_str());
+            ChatHandler(nullptr).SendWorldText(LANG_BAN_ACCOUNT_YOUPERMBANNEDMESSAGE_WORLD, Author, AccountName, Reason);
     }
 
     return BAN_SUCCESS;
@@ -188,9 +190,9 @@ BanReturn BanMgr::BanIP(std::string const& IP, std::string const& Duration, std:
             IsPermanetly = false;
 
         if (IsPermanetly)
-            sWorld->SendWorldText(LANG_BAN_IP_YOUPERMBANNEDMESSAGE_WORLD, Author.c_str(), IP.c_str(), Reason.c_str());
+            ChatHandler(nullptr).SendWorldText(LANG_BAN_IP_YOUPERMBANNEDMESSAGE_WORLD, Author, IP, Reason);
         else
-            sWorld->SendWorldText(LANG_BAN_IP_YOUBANNEDMESSAGE_WORLD, Author.c_str(), IP.c_str(), secsToTimeString(TimeStringToSecs(Duration), true).c_str(), Reason.c_str());
+            ChatHandler(nullptr).SendWorldText(LANG_BAN_IP_YOUBANNEDMESSAGE_WORLD, Author, IP, secsToTimeString(TimeStringToSecs(Duration), true), Reason);
     }
 
     if (!resultAccounts)
@@ -204,11 +206,11 @@ BanReturn BanMgr::BanIP(std::string const& IP, std::string const& Duration, std:
         Field* fields = resultAccounts->Fetch();
         uint32 AccountID = fields[0].Get<uint32>();
 
-        if (WorldSession* session = sWorld->FindSession(AccountID))
+        if (WorldSession* session = sWorldSessionMgr->FindSession(AccountID))
             if (session->GetPlayerName() != Author)
                 session->KickPlayer("Ban IP at condition 'FindSession(account)->GetPlayerName() != author'");
 
-        if (WorldSession* session = sWorld->FindOfflineSession(AccountID))
+        if (WorldSession* session = sWorldSessionMgr->FindOfflineSession(AccountID))
             if (session->GetPlayerName() != Author)
                 session->KickPlayer("Ban IP at condition 'FindOfflineSession(account)->GetPlayerName() != author'");
     } while (resultAccounts->NextRow());
@@ -258,9 +260,9 @@ BanReturn BanMgr::BanCharacter(std::string const& CharacterName, std::string con
             IsPermanetly = false;
 
         if (!IsPermanetly)
-            sWorld->SendWorldText(LANG_BAN_CHARACTER_YOUBANNEDMESSAGE_WORLD, Author.c_str(), CharacterName.c_str(), secsToTimeString(TimeStringToSecs(Duration), true).c_str(), Reason.c_str());
+            ChatHandler(nullptr).SendWorldText(LANG_BAN_CHARACTER_YOUBANNEDMESSAGE_WORLD, Author, CharacterName, secsToTimeString(TimeStringToSecs(Duration), true), Reason);
         else
-            sWorld->SendWorldText(LANG_BAN_CHARACTER_YOUPERMBANNEDMESSAGE_WORLD, Author.c_str(), CharacterName.c_str(), Reason.c_str());
+            ChatHandler(nullptr).SendWorldText(LANG_BAN_CHARACTER_YOUPERMBANNEDMESSAGE_WORLD, Author, CharacterName, Reason);
     }
 
     return BAN_SUCCESS;

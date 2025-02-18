@@ -82,7 +82,7 @@ class spell_winter_wondervolt_trap : public SpellScript
         if (Player* target = GetHitPlayer())
         {
             // check presence
-            if (target->HasAuraType(SPELL_AURA_TRANSFORM))
+            if (target->HasTransformAura())
                 return;
 
             uint32 spellId = 0;
@@ -266,4 +266,3 @@ void AddSC_event_winter_veil_scripts()
     RegisterSpellScript(spell_winter_veil_racer_slam_hit);
     RegisterSpellScript(spell_winter_veil_shoot_air_rifle);
 }
-

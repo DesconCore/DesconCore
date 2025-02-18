@@ -55,7 +55,7 @@ void NPCStaveQuestAI::StorePlayerGUID()
 
     for (ThreatContainer::StorageType::const_iterator itr = threatList.begin(); itr != threatList.end(); ++itr)
     {
-        if ((*itr)->getTarget()->GetTypeId() == TYPEID_PLAYER)
+        if ((*itr)->getTarget()->IsPlayer())
         {
             playerGUID = (*itr)->getUnitGuid();
         }
@@ -200,7 +200,7 @@ void NPCStaveQuestAI::StoreAttackerGuidValue(Unit* attacker)
     bool isGUIDPresent = std::find(attackerGuids.begin(), attackerGuids.end(), guidValue) != attackerGuids.end();
 
     // don't store snaketrap's snakes and trap triggers
-    if (isGUIDPresent || (IsAllowedEntry(attacker->GetEntry()) && attacker->GetTypeId() != TYPEID_PLAYER))
+    if (isGUIDPresent || (IsAllowedEntry(attacker->GetEntry()) && !attacker->IsPlayer()))
     {
         return;
     }
@@ -999,14 +999,10 @@ public:
         void SpellHit(Unit* /*Caster*/, SpellInfo const* Spell) override
         {
             if (InNormalForm())
-            {
                 return;
-            }
 
-            if (me->HasAura(NELSON_SPELL_SOUL_FLAME) && me->HasAura(NELSON_WEAKNESS_FROST_TRAP))
-            {
+            if (me->HasAllAuras(NELSON_SPELL_SOUL_FLAME, NELSON_WEAKNESS_FROST_TRAP))
                 me->RemoveAura(NELSON_SPELL_SOUL_FLAME);
-            }
 
             if (!me->HasAura(NELSON_SPELL_CRIPPLING_CLIP) && Spell->Id == NELSON_WEAKNESS_WING_CLIP)
             {

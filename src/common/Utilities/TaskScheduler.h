@@ -19,14 +19,11 @@
 #define _TASK_SCHEDULER_H_
 
 #include "Util.h"
-#include <algorithm>
 #include <chrono>
 #include <functional>
-#include <memory>
 #include <optional>
 #include <queue>
 #include <set>
-#include <utility>
 #include <vector>
 
 class TaskContext;
@@ -151,6 +148,9 @@ class TaskScheduler
         /// Check if the group exists and is currently scheduled.
         bool IsGroupQueued(group_t const group);
 
+        // Returns the next group occurrence.
+        TaskScheduler::timepoint_t GetNextGroupOccurrence(group_t const group) const;
+
         bool IsEmpty() const;
     };
 
@@ -209,7 +209,7 @@ public:
 
     /// Update the scheduler with a difftime in ms.
     /// Calls the optional callback on successfully finish.
-    TaskScheduler& Update(size_t const milliseconds, success_t const& callback = EmptyCallback);
+    TaskScheduler& Update(std::size_t const milliseconds, success_t const& callback = EmptyCallback);
 
     /// Update the scheduler with a difftime.
     /// Calls the optional callback on successfully finish.
@@ -376,6 +376,9 @@ public:
         return RescheduleGroup(group, RandomDurationBetween(min, max));
     }
 
+    // Returns the next group occurrence.
+    Milliseconds GetNextGroupOccurrence(group_t const group) const;
+
 private:
     /// Insert a new task to the enqueued tasks.
     TaskScheduler& InsertTask(TaskContainer task);
@@ -479,6 +482,8 @@ public:
 
     /// Returns the repeat counter which increases every time the task is repeated.
     TaskScheduler::repeated_t GetRepeatCounter() const;
+
+    TaskScheduler::timepoint_t GetNextOccurrence() const;
 
     /// Repeats the event and sets a new duration.
     /// std::chrono::seconds(5) for example.

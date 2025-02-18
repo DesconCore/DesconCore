@@ -62,7 +62,8 @@ enum Texts
 
 MinionData const minionData[] =
 {
-    { NPC_CHROMATIC_ELITE_GUARD, DATA_GENERAL_DRAKKISATH }
+    { NPC_CHROMATIC_ELITE_GUARD, DATA_GENERAL_DRAKKISATH },
+    { 0,                         0,                      }
 };
 
 DoorData const doorData[] =
@@ -358,7 +359,7 @@ public:
                     }
                     break;
                 case DATA_SOLAKAR_FLAMEWREATH:
-                    switch(data)
+                    switch (data)
                     {
                         case IN_PROGRESS:
                             if (SolakarState == NOT_STARTED)
@@ -401,14 +402,14 @@ public:
                                 pile->SetLootState(GO_READY);
                                 pile->Respawn();
                             }
-                            for (const auto& circleGUID : go_urokOgreCirles)
+                            for (auto const& circleGUID : go_urokOgreCirles)
                             {
                                 if (GameObject* circle = instance->GetGameObject(circleGUID))
                                 {
                                     circle->Delete();
                                 }
                             }
-                            for (const auto& mobGUID : UrokMobs)
+                            for (auto const& mobGUID : UrokMobs)
                             {
                                 if (Creature* mob = instance->GetCreature(mobGUID))
                                 {

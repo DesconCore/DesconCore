@@ -24,7 +24,6 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <type_traits>
 #include <variant>
 
 class ChatHandler;
@@ -55,10 +54,10 @@ namespace Acore::Impl::ChatCommands
     inline TokenizeResult tokenize(std::string_view args)
     {
         TokenizeResult result;
-        if (size_t delimPos = args.find(COMMAND_DELIMITER); delimPos != std::string_view::npos)
+        if (std::size_t delimPos = args.find(COMMAND_DELIMITER); delimPos != std::string_view::npos)
         {
             result.token = args.substr(0, delimPos);
-            if (size_t tailPos = args.find_first_not_of(COMMAND_DELIMITER, delimPos); tailPos != std::string_view::npos)
+            if (std::size_t tailPos = args.find_first_not_of(COMMAND_DELIMITER, delimPos); tailPos != std::string_view::npos)
                 result.tail = args.substr(tailPos);
         }
         else
@@ -121,7 +120,7 @@ namespace Acore::Impl::ChatCommands
     };
 
     AC_GAME_API void SendErrorMessageToHandler(ChatHandler* handler, std::string_view str);
-    AC_GAME_API char const* GetAcoreString(ChatHandler const* handler, AcoreStrings which);
+    AC_GAME_API std::string GetAcoreString(ChatHandler const* handler, AcoreStrings which);
     template <typename... Ts>
     std::string FormatAcoreString(ChatHandler const* handler, AcoreStrings which, Ts&&... args)
     {

@@ -32,6 +32,7 @@ EndScriptData */
 #include "Player.h"
 #include "World.h"
 #include "WorldSession.h"
+#include "WorldSessionMgr.h"
 
 using namespace Acore::ChatCommands;
 
@@ -64,7 +65,7 @@ public:
         if (WorldSession* session = handler->GetSession())
             name = session->GetPlayer()->GetName();
 
-        sWorld->SendWorldText(LANG_ANNOUNCE_COLOR, name.c_str(), message.data());
+        handler->SendWorldText(LANG_ANNOUNCE_COLOR, name, message.data());
         return true;
     }
 
@@ -77,7 +78,7 @@ public:
         if (WorldSession* session = handler->GetSession())
             name = session->GetPlayer()->GetName();
 
-        sWorld->SendGMText(LANG_GM_ANNOUNCE_COLOR, name.c_str(), message.data());
+        handler->SendGMText(LANG_GM_ANNOUNCE_COLOR, name, message.data());
         return true;
     }
 
@@ -87,17 +88,17 @@ public:
         if (message.empty())
             return false;
 
-        sWorld->SendServerMessage(SERVER_MSG_STRING, Acore::StringFormat(handler->GetAcoreString(LANG_SYSTEMMESSAGE), message.data()).c_str());
+        sWorldSessionMgr->SendServerMessage(SERVER_MSG_STRING, Acore::StringFormat(handler->GetAcoreString(LANG_SYSTEMMESSAGE), message.data()));
         return true;
     }
 
     // announce to logged in GMs
-    static bool HandleGMAnnounceCommand(ChatHandler* /*handler*/, Tail message)
+    static bool HandleGMAnnounceCommand(ChatHandler* handler, Tail message)
     {
         if (message.empty())
             return false;
 
-        sWorld->SendGMText(LANG_GM_BROADCAST, message.data());
+        handler->SendGMText(LANG_GM_BROADCAST, message.data());
         return true;
     }
 
@@ -112,7 +113,7 @@ public:
 
         WorldPacket data(SMSG_NOTIFICATION, (str.size() + 1));
         data << str;
-        sWorld->SendGlobalMessage(&data);
+        sWorldSessionMgr->SendGlobalMessage(&data);
 
         return true;
     }
@@ -128,7 +129,7 @@ public:
 
         WorldPacket data(SMSG_NOTIFICATION, (str.size() + 1));
         data << str;
-        sWorld->SendGlobalGMMessage(&data);
+        sWorldSessionMgr->SendGlobalGMMessage(&data);
 
         return true;
     }

@@ -138,6 +138,8 @@ public:
     void SetGmAction(uint32 needResponse, bool needMoreHelp);
 
     void AppendResponse(std::string const& response) { _response += response; }
+    std::string GetResponse() { return _response; }
+    void DeleteResponse() { _response = ""; }
 
     bool LoadFromDB(Field* fields);
     void SaveToDB(CharacterDatabaseTransaction trans) const;
@@ -228,7 +230,7 @@ public:
     void SetStatus(bool status) { _status = status; }
 
     uint64 GetLastChange() const { return _lastChange; }
-    void UpdateLastChange();
+    void UpdateLastChange(GmTicket* ticket);
 
     uint32 GenerateTicketId() { return ++_lastTicketId; }
     uint32 GetOpenTicketCount() const { return _openTicketCount; }

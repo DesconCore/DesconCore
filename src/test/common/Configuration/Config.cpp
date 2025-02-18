@@ -16,12 +16,20 @@
  */
 
 #include "Config.h"
+#include "Define.h"
 #include "gtest/gtest.h"
 
 #include <boost/filesystem.hpp>
 #include <cstdlib>
 #include <fstream>
 #include <string>
+
+#if WIN32
+    void inline setenv(const char* name, const char* value, int overwrite)
+    {
+    _putenv_s(name, value);
+    }
+#endif
 
 std::string CreateConfigWithMap(std::map<std::string, std::string> const& map)
 {
@@ -35,8 +43,12 @@ std::string CreateConfigWithMap(std::map<std::string, std::string> const& map)
         iniStream << itr.first << " = " << itr.second << "\n";
 
     iniStream.close();
-
+#if WIN32
+    auto tmp = mTempFileAbs.native();
+    return std::string(tmp.begin(), tmp.end());
+#else
     return mTempFileAbs.native();
+#endif
 }
 
 class ConfigEnvTest : public testing::Test {

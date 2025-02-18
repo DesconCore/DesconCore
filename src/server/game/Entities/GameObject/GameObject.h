@@ -19,14 +19,12 @@
 #define AZEROTHCORE_GAMEOBJECT_H
 
 #include "Common.h"
-#include "DatabaseEnv.h"
 #include "G3D/Quat.h"
 #include "GameObjectData.h"
 #include "LootMgr.h"
 #include "Object.h"
 #include "SharedDefines.h"
 #include "Unit.h"
-#include <array>
 
 class GameObjectAI;
 class Transport;
@@ -200,8 +198,7 @@ public:
     void Refresh();
     void DespawnOrUnsummon(Milliseconds delay = 0ms, Seconds forcedRespawnTime = 0s);
     void Delete();
-    void GetFishLoot(Loot* loot, Player* loot_owner);
-    void GetFishLootJunk(Loot* loot, Player* loot_owner);
+    void GetFishLoot(Loot* fishLoot, Player* lootOwner, bool junk = false);
     [[nodiscard]] GameobjectTypes GetGoType() const { return GameobjectTypes(GetByteValue(GAMEOBJECT_BYTES_1, 1)); }
     void SetGoType(GameobjectTypes type) { SetByteValue(GAMEOBJECT_BYTES_1, 1, type); }
     [[nodiscard]] GOState GetGoState() const { return GOState(GetByteValue(GAMEOBJECT_BYTES_1, 0)); }
@@ -288,8 +285,6 @@ public:
     void CastSpell(Unit* target, uint32 spell);
     void SendCustomAnim(uint32 anim);
     [[nodiscard]] bool IsInRange(float x, float y, float z, float radius) const;
-
-    void SendMessageToSetInRange(WorldPacket const* data, float dist, bool /*self*/, bool includeMargin = false, Player const* skipped_rcvr = nullptr) const override; // pussywizard!
 
     void ModifyHealth(int32 change, Unit* attackerOrHealer = nullptr, uint32 spellId = 0);
     void SetDestructibleBuildingModifyState(bool allow) { m_allowModifyDestructibleBuilding = allow; }

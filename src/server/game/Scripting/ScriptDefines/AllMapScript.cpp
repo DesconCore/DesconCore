@@ -88,10 +88,7 @@ void ScriptMgr::OnCreateMap(Map* map)
 {
     ASSERT(map);
 
-    ExecuteScript<AllMapScript>([&](AllMapScript* script)
-    {
-        script->OnCreateMap(map);
-    });
+    CALL_ENABLED_HOOKS(AllMapScript, ALLMAPHOOK_ON_CREATE_MAP, script->OnCreateMap(map));
 
     ForeachMaps<WorldMapScript>(map,
     [&](WorldMapScript* script)
@@ -116,10 +113,7 @@ void ScriptMgr::OnDestroyMap(Map* map)
 {
     ASSERT(map);
 
-    ExecuteScript<AllMapScript>([&](AllMapScript* script)
-    {
-        script->OnDestroyMap(map);
-    });
+    CALL_ENABLED_HOOKS(AllMapScript, ALLMAPHOOK_ON_DESTROY_MAP, script->OnDestroyMap(map));
 
     ForeachMaps<WorldMapScript>(map,
     [&](WorldMapScript* script)
@@ -140,10 +134,9 @@ void ScriptMgr::OnDestroyMap(Map* map)
     });
 }
 
-void ScriptMgr::OnLoadGridMap(Map* map, GridMap* gmap, uint32 gx, uint32 gy)
+void ScriptMgr::OnLoadGridMap(Map* map, GridTerrainData* gmap, uint32 gx, uint32 gy)
 {
     ASSERT(map);
-    ASSERT(gmap);
 
     ForeachMaps<WorldMapScript>(map,
     [&](WorldMapScript* script)
@@ -164,7 +157,7 @@ void ScriptMgr::OnLoadGridMap(Map* map, GridMap* gmap, uint32 gx, uint32 gy)
     });
 }
 
-void ScriptMgr::OnUnloadGridMap(Map* map, GridMap* gmap, uint32 gx, uint32 gy)
+void ScriptMgr::OnUnloadGridMap(Map* map, GridTerrainData* gmap, uint32 gx, uint32 gy)
 {
     ASSERT(map);
     ASSERT(gmap);
@@ -193,14 +186,11 @@ void ScriptMgr::OnPlayerEnterMap(Map* map, Player* player)
     ASSERT(map);
     ASSERT(player);
 
-    ExecuteScript<AllMapScript>([&](AllMapScript* script)
-    {
-        script->OnPlayerEnterAll(map, player);
-    });
+    CALL_ENABLED_HOOKS(AllMapScript, ALLMAPHOOK_ON_PLAYER_ENTER_ALL, script->OnPlayerEnterAll(map, player));
 
     ExecuteScript<PlayerScript>([=](PlayerScript* script)
     {
-        script->OnMapChanged(player);
+        script->OnPlayerMapChanged(player);
     });
 
     ForeachMaps<WorldMapScript>(map,
@@ -227,10 +217,7 @@ void ScriptMgr::OnPlayerLeaveMap(Map* map, Player* player)
     ASSERT(map);
     ASSERT(player);
 
-    ExecuteScript<AllMapScript>([&](AllMapScript* script)
-    {
-        script->OnPlayerLeaveAll(map, player);
-    });
+    CALL_ENABLED_HOOKS(AllMapScript, ALLMAPHOOK_ON_PLAYER_LEAVE_ALL, script->OnPlayerLeaveAll(map, player));
 
     ForeachMaps<WorldMapScript>(map,
     [&](WorldMapScript* script)
@@ -255,10 +242,7 @@ void ScriptMgr::OnMapUpdate(Map* map, uint32 diff)
 {
     ASSERT(map);
 
-    ExecuteScript<AllMapScript>([&](AllMapScript* script)
-    {
-        script->OnMapUpdate(map, diff);
-    });
+    CALL_ENABLED_HOOKS(AllMapScript, ALLMAPHOOK_ON_MAP_UPDATE, script->OnMapUpdate(map, diff));
 
     ForeachMaps<WorldMapScript>(map,
     [&](WorldMapScript* script)
@@ -279,26 +263,24 @@ void ScriptMgr::OnMapUpdate(Map* map, uint32 diff)
     });
 }
 
-void ScriptMgr::OnBeforeCreateInstanceScript(InstanceMap* instanceMap, InstanceScript* instanceData, bool load, std::string data, uint32 completedEncounterMask)
+void ScriptMgr::OnBeforeCreateInstanceScript(InstanceMap* instanceMap, InstanceScript** instanceData, bool load, std::string data, uint32 completedEncounterMask)
 {
-    ExecuteScript<AllMapScript>([&](AllMapScript* script)
-    {
-        script->OnBeforeCreateInstanceScript(instanceMap, instanceData, load, data, completedEncounterMask);
-    });
+    CALL_ENABLED_HOOKS(AllMapScript, ALLMAPHOOK_ON_BEFORE_CREATE_INSTANCE_SCRIPT, script->OnBeforeCreateInstanceScript(instanceMap, instanceData, load, data, completedEncounterMask));
 }
 
 void ScriptMgr::OnDestroyInstance(MapInstanced* mapInstanced, Map* map)
 {
-    ExecuteScript<AllMapScript>([&](AllMapScript* script)
-    {
-        script->OnDestroyInstance(mapInstanced, map);
-    });
+    CALL_ENABLED_HOOKS(AllMapScript, ALLMAPHOOK_ON_DESTROY_INSTANCE, script->OnDestroyInstance(mapInstanced, map));
 }
 
-AllMapScript::AllMapScript(const char* name) :
-    ScriptObject(name)
+AllMapScript::AllMapScript(const char* name, std::vector<uint16> enabledHooks) : ScriptObject(name, ALLMAPHOOK_END)
 {
-    ScriptRegistry<AllMapScript>::AddScript(this);
+    // If empty - enable all available hooks.
+    if (enabledHooks.empty())
+        for (uint16 i = 0; i < ALLMAPHOOK_END; ++i)
+            enabledHooks.emplace_back(i);
+
+    ScriptRegistry<AllMapScript>::AddScript(this, std::move(enabledHooks));
 }
 
 template class AC_GAME_API ScriptRegistry<AllMapScript>;

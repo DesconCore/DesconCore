@@ -544,7 +544,7 @@ public:
 
         void KilledUnit(Unit* victim) override
         {
-            if (victim->GetTypeId() == TYPEID_PLAYER)
+            if (victim->IsPlayer())
                 Talk(SAY_KILL);
         }
 
@@ -912,7 +912,7 @@ public:
         npc_vengeful_shadeAI(Creature* creature) : ScriptedAI(creature)
         {
             me->SetControlled(true, UNIT_STATE_ROOT);
-            unroot_timer = 500;
+            unroot_timer = 2000;
             targetGUID.Clear();
         }
 
@@ -1021,18 +1021,25 @@ public:
         void JustDied(Unit* killer) override
         {
             events.Reset();
-            if (Player* owner = killer->GetCharmerOrOwnerPlayerOrPlayerItself())
+
+            if (!killer)
+                return;
+
+            Player* owner = killer->GetCharmerOrOwnerPlayerOrPlayerItself();
+            if (!owner)
+                return;
+
+            Group* group = owner->GetGroup();
+            if (!group)
             {
-                if (Group* group = owner->GetGroup())
-                {
-                    for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
-                        if (Player* member = itr->GetSource())
-                            if (member->IsInMap(owner))
-                                member->FailQuest(QUEST_DEPROGRAMMING);
-                }
-                else
-                    owner->FailQuest(QUEST_DEPROGRAMMING);
+                owner->FailQuest(QUEST_DEPROGRAMMING);
+                return;
             }
+
+            for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+                if (Player* member = itr->GetSource())
+                    if (member->IsInMap(owner))
+                        member->FailQuest(QUEST_DEPROGRAMMING);
         }
 
         void MovementInform(uint32 type, uint32 id) override
@@ -1113,35 +1120,24 @@ public:
     }
 };
 
-class spell_deathwhisper_mana_barrier : public SpellScriptLoader
+class spell_deathwhisper_mana_barrier_aura : public AuraScript
 {
-public:
-    spell_deathwhisper_mana_barrier() : SpellScriptLoader("spell_deathwhisper_mana_barrier") { }
+    PrepareAuraScript(spell_deathwhisper_mana_barrier_aura);
 
-    class spell_deathwhisper_mana_barrier_AuraScript : public AuraScript
+    void HandlePeriodicTick(AuraEffect const* /*aurEff*/)
     {
-        PrepareAuraScript(spell_deathwhisper_mana_barrier_AuraScript);
-
-        void HandlePeriodicTick(AuraEffect const* /*aurEff*/)
+        PreventDefaultAction();
+        if (Unit* caster = GetCaster())
         {
-            PreventDefaultAction();
-            if (Unit* caster = GetCaster())
-            {
-                int32 missingHealth = int32(caster->GetMaxHealth() - caster->GetHealth());
-                caster->ModifyHealth(missingHealth);
-                caster->ModifyPower(POWER_MANA, -missingHealth);
-            }
+            int32 missingHealth = int32(caster->GetMaxHealth() - caster->GetHealth());
+            caster->ModifyHealth(missingHealth);
+            caster->ModifyPower(POWER_MANA, -missingHealth);
         }
+    }
 
-        void Register() override
-        {
-            OnEffectPeriodic += AuraEffectPeriodicFn(spell_deathwhisper_mana_barrier_AuraScript::HandlePeriodicTick, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL);
-        }
-    };
-
-    AuraScript* GetAuraScript() const override
+    void Register() override
     {
-        return new spell_deathwhisper_mana_barrier_AuraScript();
+        OnEffectPeriodic += AuraEffectPeriodicFn(spell_deathwhisper_mana_barrier_aura::HandlePeriodicTick, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL);
     }
 };
 
@@ -1197,7 +1193,7 @@ void AddSC_boss_lady_deathwhisper()
     new npc_darnavan();
 
     // Spells
-    new spell_deathwhisper_mana_barrier();
+    RegisterSpellScript(spell_deathwhisper_mana_barrier_aura);
     RegisterSpellScript(spell_deathwhisper_dark_reckoning);
 
     // AreaTriggers

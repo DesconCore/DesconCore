@@ -22,7 +22,6 @@ Comment: All lookup related commands
 Category: commandscripts
 EndScriptData */
 
-#include "AccountMgr.h"
 #include "CharacterCache.h"
 #include "Chat.h"
 #include "CommandScript.h"
@@ -31,6 +30,7 @@ EndScriptData */
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "ReputationMgr.h"
+#include "SharedDefines.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 
@@ -211,11 +211,11 @@ public:
 
                         if (handler->GetSession())
                         {
-                            handler->PSendSysMessage(LANG_CREATURE_ENTRY_LIST_CHAT, id, id, name.c_str());
+                            handler->PSendSysMessage(LANG_CREATURE_ENTRY_LIST_CHAT, id, id, name);
                         }
                         else
                         {
-                            handler->PSendSysMessage(LANG_CREATURE_ENTRY_LIST_CONSOLE, id, name.c_str());
+                            handler->PSendSysMessage(LANG_CREATURE_ENTRY_LIST_CONSOLE, id, name);
                         }
 
                         if (!found)
@@ -244,11 +244,11 @@ public:
 
                 if (handler->GetSession())
                 {
-                    handler->PSendSysMessage(LANG_CREATURE_ENTRY_LIST_CHAT, id, id, name.c_str());
+                    handler->PSendSysMessage(LANG_CREATURE_ENTRY_LIST_CHAT, id, id, name);
                 }
                 else
                 {
-                    handler->PSendSysMessage(LANG_CREATURE_ENTRY_LIST_CONSOLE, id, name.c_str());
+                    handler->PSendSysMessage(LANG_CREATURE_ENTRY_LIST_CONSOLE, id, name);
                 }
 
                 if (!found)
@@ -269,17 +269,13 @@ public:
     static bool HandleLookupEventCommand(ChatHandler* handler, Tail namePart)
     {
         if (namePart.empty())
-        {
             return false;
-        }
 
         std::wstring wNamePart;
 
         // converting string that we try to find to lower case
         if (!Utf8toWStr(namePart, wNamePart))
-        {
             return false;
-        }
 
         wstrToLower(wNamePart);
 
@@ -294,11 +290,9 @@ public:
         {
             GameEventData const& eventData = events[id];
 
-            std::string descr = eventData.description;
+            std::string descr = eventData.Description;
             if (descr.empty())
-            {
                 continue;
-            }
 
             if (Utf8FitTo(descr, wNamePart))
             {
@@ -308,28 +302,20 @@ public:
                     return true;
                 }
 
-                char const* active = activeEvents.find(id) != activeEvents.end() ? handler->GetAcoreString(LANG_ACTIVE) : "";
+                std::string active = activeEvents.find(id) != activeEvents.end() ? handler->GetAcoreString(LANG_ACTIVE) : "";
 
                 if (handler->GetSession())
-                {
-                    handler->PSendSysMessage(LANG_EVENT_ENTRY_LIST_CHAT, id, id, eventData.description.c_str(), active);
-                }
+                    handler->PSendSysMessage(LANG_EVENT_ENTRY_LIST_CHAT, id, id, eventData.Description, active);
                 else
-                {
-                    handler->PSendSysMessage(LANG_EVENT_ENTRY_LIST_CONSOLE, id, eventData.description.c_str(), active);
-                }
+                    handler->PSendSysMessage(LANG_EVENT_ENTRY_LIST_CONSOLE, id, eventData.Description, active);
 
                 if (!found)
-                {
                     found = true;
-                }
             }
         }
 
         if (!found)
-        {
             handler->SendSysMessage(LANG_NOEVENTFOUND);
-        }
 
         return true;
     }
@@ -516,11 +502,13 @@ public:
 
                             if (handler->GetSession())
                             {
-                                handler->PSendSysMessage(LANG_ITEM_LIST_CHAT, itemTemplate.ItemId, itemTemplate.ItemId, name.c_str());
+                                std::ostringstream color;
+                                color << std::hex << ItemQualityColors[itemTemplate.Quality];
+                                handler->PSendSysMessage(LANG_ITEM_LIST_CHAT, itemTemplate.ItemId, color.str(), itemTemplate.ItemId, name);
                             }
                             else
                             {
-                                handler->PSendSysMessage(LANG_ITEM_LIST_CONSOLE, itemTemplate.ItemId, name.c_str());
+                                handler->PSendSysMessage(LANG_ITEM_LIST_CONSOLE, itemTemplate.ItemId, name);
                             }
 
                             if (!found)
@@ -550,11 +538,13 @@ public:
 
                 if (handler->GetSession())
                 {
-                    handler->PSendSysMessage(LANG_ITEM_LIST_CHAT, itemTemplate.ItemId, itemTemplate.ItemId, name.c_str());
+                    std::ostringstream color;
+                    color << std::hex << ItemQualityColors[itemTemplate.Quality];
+                    handler->PSendSysMessage(LANG_ITEM_LIST_CHAT, itemTemplate.ItemId, color.str(), itemTemplate.ItemId, name);
                 }
                 else
                 {
-                    handler->PSendSysMessage(LANG_ITEM_LIST_CONSOLE, itemTemplate.ItemId, name.c_str());
+                    handler->PSendSysMessage(LANG_ITEM_LIST_CONSOLE, itemTemplate.ItemId, name);
                 }
 
                 if (!found)
@@ -640,11 +630,11 @@ public:
                     // send item set in "id - [namedlink locale]" format
                     if (handler->GetSession())
                     {
-                        handler->PSendSysMessage(LANG_ITEMSET_LIST_CHAT, id, id, name.c_str(), localeNames[locale]);
+                        handler->PSendSysMessage(LANG_ITEMSET_LIST_CHAT, id, id, name, localeNames[locale]);
                     }
                     else
                     {
-                        handler->PSendSysMessage(LANG_ITEMSET_LIST_CONSOLE, id, name.c_str(), localeNames[locale]);
+                        handler->PSendSysMessage(LANG_ITEMSET_LIST_CONSOLE, id, name, localeNames[locale]);
                     }
 
                     if (!found)
@@ -703,11 +693,11 @@ public:
 
                         if (handler->GetSession())
                         {
-                            handler->PSendSysMessage(LANG_GO_ENTRY_LIST_CHAT, gameObjectTemplate.entry, gameObjectTemplate.entry, name.c_str());
+                            handler->PSendSysMessage(LANG_GO_ENTRY_LIST_CHAT, gameObjectTemplate.entry, gameObjectTemplate.entry, name);
                         }
                         else
                         {
-                            handler->PSendSysMessage(LANG_GO_ENTRY_LIST_CONSOLE, gameObjectTemplate.entry, name.c_str());
+                            handler->PSendSysMessage(LANG_GO_ENTRY_LIST_CONSOLE, gameObjectTemplate.entry, name);
                         }
 
                         if (!found)
@@ -736,11 +726,11 @@ public:
 
                 if (handler->GetSession())
                 {
-                    handler->PSendSysMessage(LANG_GO_ENTRY_LIST_CHAT, gameObjectTemplate.entry, gameObjectTemplate.entry, name.c_str());
+                    handler->PSendSysMessage(LANG_GO_ENTRY_LIST_CHAT, gameObjectTemplate.entry, gameObjectTemplate.entry, name);
                 }
                 else
                 {
-                    handler->PSendSysMessage(LANG_GO_ENTRY_LIST_CONSOLE, gameObjectTemplate.entry, name.c_str());
+                    handler->PSendSysMessage(LANG_GO_ENTRY_LIST_CONSOLE, gameObjectTemplate.entry, name);
                 }
 
                 if (!found)
@@ -802,7 +792,7 @@ public:
                                 return true;
                             }
 
-                            char const* statusStr = "";
+                            std::string statusStr = "";
 
                             if (target)
                             {
@@ -811,13 +801,13 @@ public:
                                 switch (status)
                                 {
                                     case QUEST_STATUS_COMPLETE:
-                                        statusStr = handler->GetAcoreString(LANG_COMMAND_QUEST_COMPLETE);
+                                        statusStr = handler->GetAcoreString(LANG_COMPLETE);
                                         break;
                                     case QUEST_STATUS_INCOMPLETE:
-                                        statusStr = handler->GetAcoreString(LANG_COMMAND_QUEST_ACTIVE);
+                                        statusStr = handler->GetAcoreString(LANG_ACTIVE);
                                         break;
                                     case QUEST_STATUS_REWARDED:
-                                        statusStr = handler->GetAcoreString(LANG_COMMAND_QUEST_REWARDED);
+                                        statusStr = handler->GetAcoreString(LANG_REWARDED);
                                         break;
                                     default:
                                         break;
@@ -826,11 +816,11 @@ public:
 
                             if (handler->GetSession())
                             {
-                                handler->PSendSysMessage(LANG_QUEST_LIST_CHAT, qInfo->GetQuestId(), qInfo->GetQuestId(), qInfo->GetQuestLevel(), title.c_str(), statusStr);
+                                handler->PSendSysMessage(LANG_QUEST_LIST_CHAT, qInfo->GetQuestId(), qInfo->GetQuestId(), qInfo->GetQuestLevel(), title, statusStr);
                             }
                             else
                             {
-                                handler->PSendSysMessage(LANG_QUEST_LIST_CONSOLE, qInfo->GetQuestId(), title.c_str(), statusStr);
+                                handler->PSendSysMessage(LANG_QUEST_LIST_CONSOLE, qInfo->GetQuestId(), title, statusStr);
                             }
 
                             if (!found)
@@ -858,7 +848,7 @@ public:
                     return true;
                 }
 
-                char const* statusStr = "";
+                std::string statusStr = "";
 
                 if (target)
                 {
@@ -867,13 +857,13 @@ public:
                     switch (status)
                     {
                         case QUEST_STATUS_COMPLETE:
-                            statusStr = handler->GetAcoreString(LANG_COMMAND_QUEST_COMPLETE);
+                            statusStr = handler->GetAcoreString(LANG_COMPLETE);
                             break;
                         case QUEST_STATUS_INCOMPLETE:
-                            statusStr = handler->GetAcoreString(LANG_COMMAND_QUEST_ACTIVE);
+                            statusStr = handler->GetAcoreString(LANG_ACTIVE);
                             break;
                         case QUEST_STATUS_REWARDED:
-                            statusStr = handler->GetAcoreString(LANG_COMMAND_QUEST_REWARDED);
+                            statusStr = handler->GetAcoreString(LANG_REWARDED);
                             break;
                         default:
                             break;
@@ -882,11 +872,11 @@ public:
 
                 if (handler->GetSession())
                 {
-                    handler->PSendSysMessage(LANG_QUEST_LIST_CHAT, qInfo->GetQuestId(), qInfo->GetQuestId(), qInfo->GetQuestLevel(), title.c_str(), statusStr);
+                    handler->PSendSysMessage(LANG_QUEST_LIST_CHAT, qInfo->GetQuestId(), qInfo->GetQuestId(), qInfo->GetQuestLevel(), title, statusStr);
                 }
                 else
                 {
-                    handler->PSendSysMessage(LANG_QUEST_LIST_CONSOLE, qInfo->GetQuestId(), title.c_str(), statusStr);
+                    handler->PSendSysMessage(LANG_QUEST_LIST_CONSOLE, qInfo->GetQuestId(), title, statusStr);
                 }
 
                 if (!found)
@@ -987,11 +977,11 @@ public:
                 // send skill in "id - [namedlink locale]" format
                 if (handler->GetSession())
                 {
-                    handler->PSendSysMessage(LANG_SKILL_LIST_CHAT, skillInfo->id, skillInfo->id, name.c_str(), localeNames[locale], knownStr.c_str(), valStr.c_str());
+                    handler->PSendSysMessage(LANG_SKILL_LIST_CHAT, skillInfo->id, skillInfo->id, name, localeNames[locale], knownStr, valStr);
                 }
                 else
                 {
-                    handler->PSendSysMessage(LANG_SKILL_LIST_CONSOLE, skillInfo->id, name.c_str(), localeNames[locale], knownStr.c_str(), valStr.c_str());
+                    handler->PSendSysMessage(LANG_SKILL_LIST_CONSOLE, skillInfo->id, name, localeNames[locale], knownStr, valStr);
                 }
 
                 if (!found)
@@ -1341,12 +1331,12 @@ public:
                 // send taxinode in "id - [name] (Map:m X:x Y:y Z:z)" format
                 if (handler->GetSession())
                 {
-                    handler->PSendSysMessage(LANG_TAXINODE_ENTRY_LIST_CHAT, nodeEntry->ID, nodeEntry->ID, name.c_str(), localeNames[locale],
+                    handler->PSendSysMessage(LANG_TAXINODE_ENTRY_LIST_CHAT, nodeEntry->ID, nodeEntry->ID, name, localeNames[locale],
                                              nodeEntry->map_id, nodeEntry->x, nodeEntry->y, nodeEntry->z);
                 }
                 else
                 {
-                    handler->PSendSysMessage(LANG_TAXINODE_ENTRY_LIST_CONSOLE, nodeEntry->ID, name.c_str(), localeNames[locale],
+                    handler->PSendSysMessage(LANG_TAXINODE_ENTRY_LIST_CONSOLE, nodeEntry->ID, name, localeNames[locale],
                                              nodeEntry->map_id, nodeEntry->x, nodeEntry->y, nodeEntry->z);
                 }
 
@@ -1416,7 +1406,7 @@ public:
         }
         else
         {
-            handler->PSendSysMessage(LANG_COMMAND_TELE_LOCATION, reply.str().c_str());
+            handler->PSendSysMessage(LANG_COMMAND_TELE_LOCATION, reply.str());
         }
 
         if (limitReached)
@@ -1494,20 +1484,16 @@ public:
                     return true;
                 }
 
-                char const* knownStr = target && target->HasTitle(titleInfo) ? handler->GetAcoreString(LANG_KNOWN) : "";
-                char const* activeStr = target && target->GetUInt32Value(PLAYER_CHOSEN_TITLE) == titleInfo->bit_index ? handler->GetAcoreString(LANG_ACTIVE) : "";
+                std::string knownStr = target && target->HasTitle(titleInfo) ? handler->GetAcoreString(LANG_KNOWN) : "";
+                std::string activeStr = target && target->GetUInt32Value(PLAYER_CHOSEN_TITLE) == titleInfo->bit_index ? handler->GetAcoreString(LANG_ACTIVE) : "";
 
                 std::string titleNameStr = Acore::StringFormat(name, targetName);
 
                 // send title in "id (idx:idx) - [namedlink locale]" format
                 if (handler->GetSession())
-                {
                     handler->PSendSysMessage(LANG_TITLE_LIST_CHAT, titleInfo->ID, titleInfo->bit_index, titleInfo->ID, titleNameStr, localeNames[locale], knownStr, activeStr);
-                }
                 else
-                {
                     handler->PSendSysMessage(LANG_TITLE_LIST_CONSOLE, titleInfo->ID, titleInfo->bit_index, titleNameStr, localeNames[locale], knownStr, activeStr);
-                }
 
                 ++counter;
             }
@@ -1675,7 +1661,7 @@ public:
 
             if (result2)
             {
-                handler->PSendSysMessage(LANG_LOOKUP_PLAYER_ACCOUNT, accountName.c_str(), accountId);
+                handler->PSendSysMessage(LANG_LOOKUP_PLAYER_ACCOUNT, accountName, accountId);
 
                 do
                 {
@@ -1694,11 +1680,11 @@ public:
 
                     if (plevel > 0 && prace > 0 && prace <= RACE_DRAENEI && pclass > 0 && pclass <= CLASS_DRUID)
                     {
-                        handler->PSendSysMessage("  %s (GUID %u) - %s - %s - %u%s", name.c_str(), guid, EnumUtils::ToTitle(Races(prace)), EnumUtils::ToTitle(Classes(pclass)), plevel, (online ? " - [ONLINE]" : ""));
+                        handler->PSendSysMessage("  {} (GUID {}) - {} - {} - {}{}", name, guid, EnumUtils::ToTitle(Races(prace)), EnumUtils::ToTitle(Classes(pclass)), plevel, (online ? " - [ONLINE]" : ""));
                     }
                     else
                     {
-                        handler->PSendSysMessage(LANG_LOOKUP_PLAYER_CHARACTER, name.c_str(), guid);
+                        handler->PSendSysMessage(LANG_LOOKUP_PLAYER_CHARACTER, name, guid);
                     }
 
                     ++counter;

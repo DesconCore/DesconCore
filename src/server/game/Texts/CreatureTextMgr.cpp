@@ -31,7 +31,7 @@ public:
     CreatureTextBuilder(WorldObject* obj, uint8 gender, ChatMsg msgtype, uint8 textGroup, uint32 id, uint32 language, WorldObject const* target)
         : _source(obj), _gender(gender), _msgType(msgtype), _textGroup(textGroup), _textId(id), _language(language), _target(target) { }
 
-    size_t operator()(WorldPacket* data, LocaleConstant locale) const
+    std::size_t operator()(WorldPacket* data, LocaleConstant locale) const
     {
         std::string const& text = sCreatureTextMgr->GetLocalizedChatString(_source->GetEntry(), _gender, _textGroup, _textId, locale);
 
@@ -54,7 +54,7 @@ public:
     PlayerTextBuilder(WorldObject* obj, WorldObject* speaker, uint8 gender, ChatMsg msgtype, uint8 textGroup, uint32 id, uint32 language, WorldObject const* target)
         : _source(obj), _talker(speaker), _gender(gender), _msgType(msgtype), _textGroup(textGroup), _textId(id), _language(language), _target(target) { }
 
-    size_t operator()(WorldPacket* data, LocaleConstant locale) const
+    std::size_t operator()(WorldPacket* data, LocaleConstant locale) const
     {
         std::string const& text = sCreatureTextMgr->GetLocalizedChatString(_source->GetEntry(), _gender, _textGroup, _textId, locale);
 
@@ -343,9 +343,9 @@ void CreatureTextMgr::SendNonChatPacket(WorldObject* source, WorldPacket const* 
         case CHAT_MSG_MONSTER_WHISPER:
         case CHAT_MSG_RAID_BOSS_WHISPER:
             {
-                if (range == TEXT_RANGE_NORMAL)//ignores team and gmOnly
+                if (range == TEXT_RANGE_NORMAL) // ignores team and GM only
                 {
-                    if (!target || target->GetTypeId() != TYPEID_PLAYER)
+                    if (!target || !target->IsPlayer())
                         return;
 
                     target->ToPlayer()->GetSession()->SendPacket(data);
@@ -387,8 +387,8 @@ void CreatureTextMgr::SendNonChatPacket(WorldObject* source, WorldPacket const* 
             }
         case TEXT_RANGE_WORLD:
             {
-                SessionMap const& smap = sWorld->GetAllSessions();
-                for (SessionMap::const_iterator itr = smap.begin(); itr != smap.end(); ++itr)
+                WorldSessionMgr::SessionMap const& sessionMap = sWorldSessionMgr->GetAllSessions();
+                for (WorldSessionMgr::SessionMap::const_iterator itr = sessionMap.begin(); itr != sessionMap.end(); ++itr)
                     if (Player* player = itr->second->GetPlayer())
                         if ((teamId == TEAM_NEUTRAL || player->GetTeamId() == teamId) && (!gmOnly || player->IsGameMaster()))
                             player->GetSession()->SendPacket(data);

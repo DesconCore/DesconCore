@@ -19,7 +19,6 @@
 #define SPELLDEFINES_H
 
 #include "Define.h"
-#include "ObjectGuid.h"
 #include <vector>
 
 enum SpellInterruptFlags
@@ -118,7 +117,10 @@ enum SpellValueMod
     SPELLVALUE_MAX_TARGETS,
     SPELLVALUE_AURA_STACK,
     SPELLVALUE_AURA_DURATION,
-    SPELLVALUE_FORCED_CRIT_RESULT
+    SPELLVALUE_FORCED_CRIT_RESULT,
+    SPELLVALUE_MISCVALUE0,
+    SPELLVALUE_MISCVALUE1,
+    SPELLVALUE_MISCVALUE2,
 };
 
 enum SpellFacingFlags
@@ -148,6 +150,7 @@ enum TriggerCastFlags
     TRIGGERED_FULL_MASK                             = 0x0007FFFF,   //! Used when doing CastSpell with triggered == true
     TRIGGERED_IGNORE_EQUIPPED_ITEM_REQUIREMENT      = 0x00080000,   //! Will ignore equipped item requirements
     TRIGGERED_NO_PERIODIC_RESET                     = 0x00100000,   //! Periodic aura tick wont be reset on override
+    TRIGGERED_IGNORE_EFFECTS                        = 0x00200000,   //! Ignore spell effects - used for ritual portals
     TRIGGERED_FULL_DEBUG_MASK                       = 0xFFFFFFFF
 };
 

@@ -41,7 +41,7 @@ namespace lfg
     {
     }
 
-    void LFGPlayerScript::OnLevelChanged(Player* player, uint8 /*oldLevel*/)
+    void LFGPlayerScript::OnPlayerLevelChanged(Player* player, uint8 /*oldLevel*/)
     {
         if (!sLFGMgr->isOptionEnabled(LFG_OPTION_ENABLE_DUNGEON_FINDER | LFG_OPTION_ENABLE_RAID_BROWSER | LFG_OPTION_ENABLE_SEASONAL_BOSSES))
             return;
@@ -49,7 +49,7 @@ namespace lfg
         sLFGMgr->InitializeLockedDungeons(player, player->GetGroup());
     }
 
-    void LFGPlayerScript::OnLogout(Player* player)
+    void LFGPlayerScript::OnPlayerLogout(Player* player)
     {
         if (!sLFGMgr->isOptionEnabled(LFG_OPTION_ENABLE_DUNGEON_FINDER | LFG_OPTION_ENABLE_RAID_BROWSER | LFG_OPTION_ENABLE_SEASONAL_BOSSES))
             return;
@@ -69,7 +69,7 @@ namespace lfg
         sLFGMgr->LfrSearchRemove(player);
     }
 
-    void LFGPlayerScript::OnLogin(Player* player)
+    void LFGPlayerScript::OnPlayerLogin(Player* player)
     {
         if (!sLFGMgr->isOptionEnabled(LFG_OPTION_ENABLE_DUNGEON_FINDER | LFG_OPTION_ENABLE_RAID_BROWSER | LFG_OPTION_ENABLE_SEASONAL_BOSSES))
             return;
@@ -93,14 +93,14 @@ namespace lfg
         /// @todo - Restore LfgPlayerData and send proper status to player if it was in a group
     }
 
-    void LFGPlayerScript::OnBindToInstance(Player* player, Difficulty difficulty, uint32 mapId, bool /*permanent*/)
+    void LFGPlayerScript::OnPlayerBindToInstance(Player* player, Difficulty difficulty, uint32 mapId, bool /*permanent*/)
     {
         MapEntry const* mapEntry = sMapStore.LookupEntry(mapId);
         if (mapEntry->IsDungeon() && difficulty > DUNGEON_DIFFICULTY_NORMAL)
             sLFGMgr->InitializeLockedDungeons(player, player->GetGroup());
     }
 
-    void LFGPlayerScript::OnMapChanged(Player* player)
+    void LFGPlayerScript::OnPlayerMapChanged(Player* player)
     {
         Map const* map = player->GetMap();
 
@@ -116,7 +116,7 @@ namespace lfg
                 sLFGMgr->LeaveLfg(player->GetGUID());
                 sLFGMgr->LeaveAllLfgQueues(player->GetGUID(), true);
                 player->RemoveAurasDueToSpell(LFG_SPELL_LUCK_OF_THE_DRAW);
-                player->TeleportTo(player->m_homebindMapId, player->m_homebindX, player->m_homebindY, player->m_homebindZ, player->m_homebindO);
+                player->TeleportTo(player->m_homebindMapId, player->m_homebindX, player->m_homebindY, player->m_homebindZ, 0.0f);
                 LOG_DEBUG("lfg", "LFGPlayerScript::OnMapChanged, Player {} ({}) is in LFG dungeon map but does not have a valid group! Teleporting to homebind.",
                     player->GetName(), player->GetGUID().ToString());
                 return;
@@ -246,7 +246,8 @@ namespace lfg
         {
             // xinef: fixed dungeon deserter
             if (method != GROUP_REMOVEMETHOD_KICK_LFG && state != LFG_STATE_FINISHED_DUNGEON &&
-                    player->HasAura(LFG_SPELL_DUNGEON_COOLDOWN) && players >= LFG_GROUP_KICK_VOTES_NEEDED)
+                    player->HasAura(LFG_SPELL_DUNGEON_COOLDOWN) && players >= LFG_GROUP_KICK_VOTES_NEEDED &&
+                    sWorld->getBoolConfig(CONFIG_LFG_CAST_DESERTER))
             {
                 player->AddAura(LFG_SPELL_DUNGEON_DESERTER, player);
             }

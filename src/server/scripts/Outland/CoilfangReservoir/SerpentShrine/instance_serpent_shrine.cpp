@@ -19,18 +19,12 @@
 #include "InstanceMapScript.h"
 #include "InstanceScript.h"
 #include "Player.h"
+#include "ScriptedCreature.h"
 #include "SpellScriptLoader.h"
 #include "TemporarySummon.h"
 #include "serpent_shrine.h"
-#include "ScriptedCreature.h"
-
-DoorData const doorData[] =
-{
-    { GO_LADY_VASHJ_BRIDGE_CONSOLE, DATA_BRIDGE_EMERGED, DOOR_TYPE_PASSAGE },
-    { GO_COILFANG_BRIDGE1,          DATA_BRIDGE_EMERGED, DOOR_TYPE_PASSAGE },
-    { GO_COILFANG_BRIDGE2,          DATA_BRIDGE_EMERGED, DOOR_TYPE_PASSAGE },
-    { GO_COILFANG_BRIDGE3,          DATA_BRIDGE_EMERGED, DOOR_TYPE_PASSAGE }
-};
+#include "SpellAuraEffects.h"
+#include "SpellScript.h"
 
 ObjectData const creatureData[] =
 {
@@ -43,8 +37,12 @@ ObjectData const creatureData[] =
 
 ObjectData const gameObjectData[] =
 {
-    { GO_STRANGE_POOL, DATA_STRANGE_POOL },
-    { 0,               0                 }
+    { GO_STRANGE_POOL,              DATA_STRANGE_POOL },
+    { GO_LADY_VASHJ_BRIDGE_CONSOLE, DATA_CONSOLE      },
+    { GO_COILFANG_BRIDGE1,          DATA_BRIDGE_PART1 },
+    { GO_COILFANG_BRIDGE2,          DATA_BRIDGE_PART2 },
+    { GO_COILFANG_BRIDGE3,          DATA_BRIDGE_PART3 },
+    { 0,                            0                 }
 };
 
 MinionData const minionData[] =
@@ -62,6 +60,15 @@ BossBoundaryData const boundaries =
     { DATA_LADY_VASHJ,             new CircleBoundary(Position(29.99f, -922.409f), 83.65f) }
 };
 
+ObjectData const summonData[] =
+{
+    { NPC_ENCHANTED_ELEMENTAL, DATA_LADY_VASHJ },
+    { NPC_COILFANG_ELITE,      DATA_LADY_VASHJ },
+    { NPC_COILFANG_STRIDER,    DATA_LADY_VASHJ },
+    { NPC_TAINTED_ELEMENTAL,   DATA_LADY_VASHJ },
+    { 0, 0 }
+};
+
 class instance_serpent_shrine : public InstanceMapScript
 {
 public:
@@ -75,10 +82,10 @@ public:
         {
             SetHeaders(DataHeader);
             SetBossNumber(MAX_ENCOUNTERS);
-            LoadDoorData(doorData);
             LoadObjectData(creatureData, gameObjectData);
             LoadMinionData(minionData);
             LoadBossBoundaries(boundaries);
+            LoadSummonData(summonData);
 
             _aliveKeepersCount = 0;
         }
@@ -106,6 +113,12 @@ public:
                 case GO_SHIELD_GENERATOR4:
                     _shieldGeneratorGUID[go->GetEntry() - GO_SHIELD_GENERATOR1] = go->GetGUID();
                     break;
+                case GO_LADY_VASHJ_BRIDGE_CONSOLE:
+                case GO_COILFANG_BRIDGE1:
+                case GO_COILFANG_BRIDGE2:
+                case GO_COILFANG_BRIDGE3:
+                    go->AllowSaveToDB(true);
+                    break;
             }
 
             InstanceScript::OnGameObjectCreate(go);
@@ -123,13 +136,6 @@ public:
                 case NPC_CYCLONE_KARATHRESS:
                     creature->GetMotionMaster()->MoveRandom(50.0f);
                     break;
-                case NPC_ENCHANTED_ELEMENTAL:
-                case NPC_COILFANG_ELITE:
-                case NPC_COILFANG_STRIDER:
-                case NPC_TAINTED_ELEMENTAL:
-                    if (Creature* vashj = GetCreature(DATA_LADY_VASHJ))
-                        vashj->AI()->JustSummoned(creature);
-                    break;
                 case NPC_SEER_OLUM:
                     creature->RemoveNpcFlag(UNIT_NPC_FLAG_GOSSIP);
                     creature->RemoveNpcFlag(UNIT_NPC_FLAG_QUESTGIVER);
@@ -146,19 +152,11 @@ public:
             {
                 case DATA_PLATFORM_KEEPER_RESPAWNED:
                     if (_aliveKeepersCount < MAX_KEEPER_COUNT)
-                    {
                         ++_aliveKeepersCount;
-                    }
                     break;
                 case DATA_PLATFORM_KEEPER_DIED:
                     if (_aliveKeepersCount > MIN_KEEPER_COUNT)
-                    {
                         --_aliveKeepersCount;
-                    }
-                    break;
-                case DATA_BRIDGE_ACTIVATED:
-                    SetBossState(DATA_BRIDGE_EMERGED, NOT_STARTED);
-                    SetBossState(DATA_BRIDGE_EMERGED, DONE);
                     break;
                 case DATA_ACTIVATE_SHIELD:
                     if (Creature* vashj = GetCreature(DATA_LADY_VASHJ))
@@ -201,7 +199,7 @@ class spell_serpentshrine_cavern_serpentshrine_parasite : public AuraScript
 
     void HandleEffectRemove(AuraEffect const*  /*aurEff*/, AuraEffectHandleModes /*mode*/)
     {
-        if (GetTarget()->GetInstanceScript() && GetTarget()->GetInstanceScript()->IsEncounterInProgress())
+        if (GetTarget()->GetInstanceScript())
             GetTarget()->CastSpell(GetTarget(), SPELL_SUMMON_SERPENTSHRINE_PARASITE, true);
     }
 
@@ -376,4 +374,3 @@ void AddSC_instance_serpentshrine_cavern()
     RegisterSerpentShrineAI(npc_rancid_mushroom);
     RegisterSpellScript(spell_rancid_spore_cloud);
 }
-

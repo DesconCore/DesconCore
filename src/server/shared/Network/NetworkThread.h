@@ -18,15 +18,14 @@
 #ifndef NetworkThread_h__
 #define NetworkThread_h__
 
-#include "DeadlineTimer.h"
 #include "Define.h"
 #include "Errors.h"
 #include "IoContext.h"
 #include "Log.h"
-#include "Timer.h"
-#include <atomic>
+#include "Socket.h"
 #include <boost/asio/ip/tcp.hpp>
-#include <chrono>
+#include <boost/asio/steady_timer.hpp>
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <set>
@@ -39,7 +38,7 @@ class NetworkThread
 {
 public:
     NetworkThread() :
-        _ioContext(1), _acceptSocket(_ioContext), _updateTimer(_ioContext) { }
+        _ioContext(1), _acceptSocket(_ioContext), _updateTimer(_ioContext), _proxyHeaderReadingEnabled(false) { }
 
     virtual ~NetworkThread()
     {
@@ -94,6 +93,8 @@ public:
 
     tcp::socket* GetSocketForAccept() { return &_acceptSocket; }
 
+    void EnableProxyProtocol() { _proxyHeaderReadingEnabled = true; }
+
 protected:
     virtual void SocketAdded(std::shared_ptr<SocketType> /*sock*/) { }
     virtual void SocketRemoved(std::shared_ptr<SocketType> /*sock*/) { }
@@ -105,27 +106,80 @@ protected:
         if (_newSockets.empty())
             return;
 
-        for (std::shared_ptr<SocketType> sock : _newSockets)
+        if (!_proxyHeaderReadingEnabled)
         {
+            for (std::shared_ptr<SocketType> sock : _newSockets)
+            {
+                if (!sock->IsOpen())
+                {
+                    SocketRemoved(sock);
+                    --_connections;
+                    continue;
+                }
+
+                _sockets.emplace_back(sock);
+
+                sock->Start();
+            }
+
+            _newSockets.clear();
+        }
+        else
+        {
+            HandleNewSocketsProxyReadingOnConnect();
+        }
+    }
+
+    void HandleNewSocketsProxyReadingOnConnect()
+    {
+        std::size_t index = 0;
+        std::vector<int> newSocketsToRemoveIndexes;
+        for (auto sock_iter = _newSockets.begin(); sock_iter != _newSockets.end(); ++sock_iter, ++index)
+        {
+            std::shared_ptr<SocketType> sock = *sock_iter;
+
             if (!sock->IsOpen())
             {
+                newSocketsToRemoveIndexes.emplace_back(index);
                 SocketRemoved(sock);
                 --_connections;
+                continue;
             }
-            else
-            {
-                _sockets.emplace_back(sock);
+
+            const auto proxyHeaderReadingState = sock->GetProxyHeaderReadingState();
+            if (proxyHeaderReadingState == PROXY_HEADER_READING_STATE_STARTED)
+                continue;
+
+            switch (proxyHeaderReadingState) {
+                case PROXY_HEADER_READING_STATE_NOT_STARTED:
+                    sock->AsyncReadProxyHeader();
+                    break;
+
+                case PROXY_HEADER_READING_STATE_FINISHED:
+                    newSocketsToRemoveIndexes.emplace_back(index);
+                    _sockets.emplace_back(sock);
+
+                    sock->Start();
+
+                    break;
+
+                default:
+                    newSocketsToRemoveIndexes.emplace_back(index);
+                    SocketRemoved(sock);
+                    --_connections;
+                    break;
             }
         }
 
-        _newSockets.clear();
+        for (auto it = newSocketsToRemoveIndexes.rbegin(); it != newSocketsToRemoveIndexes.rend(); ++it)
+            _newSockets.erase(_newSockets.begin() + *it);
     }
 
     void Run()
     {
         LOG_DEBUG("misc", "Network Thread Starting");
 
-        _updateTimer.expires_from_now(boost::posix_time::milliseconds(1));
+        _updateTimer.expires_at(std::chrono::steady_clock::now() + std::chrono::milliseconds(1));
         _updateTimer.async_wait([this](boost::system::error_code const&) { Update(); });
         _ioContext.run();
 
@@ -139,7 +193,7 @@ protected:
         if (_stopped)
             return;
 
-        _updateTimer.expires_from_now(boost::posix_time::milliseconds(1));
+        _updateTimer.expires_at(std::chrono::steady_clock::now() + std::chrono::milliseconds(1));
         _updateTimer.async_wait([this](boost::system::error_code const&) { Update(); });
 
         AddNewSockets();
@@ -176,7 +230,9 @@ private:
 
     Acore::Asio::IoContext _ioContext;
     tcp::socket _acceptSocket;
-    Acore::Asio::DeadlineTimer _updateTimer;
+    boost::asio::steady_timer _updateTimer;
+
+    bool _proxyHeaderReadingEnabled;
 };
 
 #endif // NetworkThread_h__

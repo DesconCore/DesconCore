@@ -66,7 +66,7 @@ bool ThreatCalcHelper::isValidProcess(Unit* hatedUnit, Unit* hatingUnit, SpellIn
         return false;
 
     // not to GM
-    if (hatedUnit->GetTypeId() == TYPEID_PLAYER && hatedUnit->ToPlayer()->IsGameMaster())
+    if (hatedUnit->IsPlayer() && hatedUnit->ToPlayer()->IsGameMaster())
         return false;
 
     // not to dead and not for dead
@@ -81,7 +81,7 @@ bool ThreatCalcHelper::isValidProcess(Unit* hatedUnit, Unit* hatingUnit, SpellIn
     if (threatSpell && threatSpell->HasAttribute(SPELL_ATTR1_NO_THREAT))
         return false;
 
-    ASSERT(hatingUnit->GetTypeId() == TYPEID_UNIT);
+    ASSERT(hatingUnit->IsCreature());
 
     return true;
 }
@@ -190,7 +190,7 @@ void HostileReference::updateOnlineStatus()
     // target is no player or not gamemaster
     // target is not in flight
     if (isValid()
-            && (getTarget()->GetTypeId() != TYPEID_PLAYER || !getTarget()->ToPlayer()->IsGameMaster())
+            && (!getTarget()->IsPlayer() || !getTarget()->ToPlayer()->IsGameMaster())
             && !getTarget()->IsInFlight()
             && getTarget()->IsInMap(GetSourceUnit())
             && getTarget()->InSamePhase(GetSourceUnit())
@@ -217,7 +217,7 @@ void HostileReference::setOnlineOfflineState(bool isOnline)
     {
         iOnline = isOnline;
 
-        ThreatRefStatusChangeEvent event(UEV_THREAT_REF_ONLINE_STATUS, this);
+        ThreatRefStatusChangeEvent event(UEV_THREAT_REF_ONLINE_STATUS, this, isOnline);
         fireStatusChanged(event);
     }
 }
@@ -230,7 +230,7 @@ void HostileReference::removeReference()
 {
     invalidate();
 
-    ThreatRefStatusChangeEvent event(UEV_THREAT_REF_REMOVE_FROM_LIST, this);
+    ThreatRefStatusChangeEvent event(UEV_THREAT_REF_REMOVE_FROM_LIST, this, false);
     fireStatusChanged(event);
 }
 
@@ -328,7 +328,7 @@ HostileReference* ThreatContainer::SelectNextVictim(Creature* attacker, HostileR
         Unit* cvUnit = currentVictim->getTarget();
         if (!attacker->CanCreatureAttack(cvUnit)) // pussywizard: if currentVictim is not valid => don't compare the threat with it, just take the highest threat valid target
             currentVictim = nullptr;
-        else if (cvUnit->IsImmunedToDamageOrSchool(attacker->GetMeleeDamageSchoolMask()) || cvUnit->HasNegativeAuraWithInterruptFlag(AURA_INTERRUPT_FLAG_TAKE_DAMAGE)) // pussywizard: no 10%/30% if currentVictim is immune to damage or has auras breakable by damage
+        else if (cvUnit->IsImmunedToDamageOrSchool(attacker->GetMeleeDamageSchoolMask()) || cvUnit->HasNegativeAuraWithInterruptFlag(AURA_INTERRUPT_FLAG_TAKE_DAMAGE) || cvUnit->HasUnitState(UNIT_STATE_CONFUSED)) // pussywizard: no 10%/30% if currentVictim is immune to damage or has auras breakable by damage
             currentVictim = nullptr;
     }
 
@@ -345,7 +345,7 @@ HostileReference* ThreatContainer::SelectNextVictim(Creature* attacker, HostileR
 
         // pussywizard: don't go to threat comparison if this ref is immune to damage or has aura breakable on damage (second choice target)
         // pussywizard: if this is the last entry on the threat list, then all targets are second choice, set bool to true and loop threat list again, ignoring this section
-        if (!noPriorityTargetFound && (target->IsImmunedToDamageOrSchool(attacker->GetMeleeDamageSchoolMask()) || target->HasNegativeAuraWithInterruptFlag(AURA_INTERRUPT_FLAG_TAKE_DAMAGE) || target->HasAuraTypeWithCaster(SPELL_AURA_IGNORED, attacker->GetGUID())))
+        if (!noPriorityTargetFound && (target->IsImmunedToDamageOrSchool(attacker->GetMeleeDamageSchoolMask()) || target->HasNegativeAuraWithInterruptFlag(AURA_INTERRUPT_FLAG_TAKE_DAMAGE) || target->HasUnitState(UNIT_STATE_CONFUSED) || target->HasAuraTypeWithCaster(SPELL_AURA_IGNORED, attacker->GetGUID())))
         {
             if (iter != lastRef)
             {
@@ -416,7 +416,7 @@ ThreatMgr::ThreatMgr(Unit* owner) : iCurrentVictim(nullptr), iOwner(owner), iUpd
 
 void ThreatMgr::ClearAllThreat()
 {
-    if (iOwner->CanHaveThreatList() && !isThreatListEmpty())
+    if (iOwner->CanHaveThreatList(true) && !isThreatListEmpty())
         iOwner->SendClearThreatListOpcode();
     clearReferences();
 }
@@ -498,7 +498,7 @@ void ThreatMgr::_addThreat(Unit* victim, float threat)
         HostileReference* hostileRef = new HostileReference(victim, this, 0);
         iThreatContainer.addReference(hostileRef);
         hostileRef->AddThreat(threat); // now we add the real threat
-        if (victim->GetTypeId() == TYPEID_PLAYER && victim->ToPlayer()->IsGameMaster())
+        if (victim->IsPlayer() && victim->ToPlayer()->IsGameMaster())
             hostileRef->setOnlineOfflineState(false); // GM is always offline
     }
 }

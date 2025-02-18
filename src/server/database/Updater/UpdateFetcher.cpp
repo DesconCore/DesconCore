@@ -25,6 +25,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "QueryResult.h"
+
 using namespace std::filesystem;
 
 struct UpdateFetcher::DirectoryEntry
@@ -155,9 +157,7 @@ UpdateFetcher::DirectoryStorage UpdateFetcher::ReceiveIncludedDirectories() cons
         std::vector<std::string> moduleList;
 
         for (auto const& itr : Acore::Tokenize(_modulesList, ',', true))
-        {
             moduleList.emplace_back(itr);
-        }
 
         // data/sql
         for (auto const& itr : moduleList)
@@ -166,9 +166,7 @@ UpdateFetcher::DirectoryStorage UpdateFetcher::ReceiveIncludedDirectories() cons
 
             Path const p(path);
             if (!is_directory(p))
-            {
                 continue;
-            }
 
             DirectoryEntry const entry = { p, AppliedFileEntry::StateConvert("MODULE") };
             directories.push_back(entry);
@@ -240,8 +238,8 @@ UpdateResult UpdateFetcher::Update(bool const redundancyChecks,
 
     AppliedFileStorage applied = ReceiveAppliedFiles();
 
-    size_t countRecentUpdates = 0;
-    size_t countArchivedUpdates = 0;
+    std::size_t countRecentUpdates = 0;
+    std::size_t countArchivedUpdates = 0;
 
     // Count updates
     for (auto const& entry : applied)
@@ -255,7 +253,7 @@ UpdateResult UpdateFetcher::Update(bool const redundancyChecks,
     for (auto& entry : applied)
         hashToName.insert(std::make_pair(entry.second.hash, entry.first));
 
-    size_t importedUpdates = 0;
+    std::size_t importedUpdates = 0;
 
     auto ApplyUpdateFile = [&](LocaleFileEntry const& sqlFile)
     {
@@ -384,14 +382,14 @@ UpdateResult UpdateFetcher::Update(bool const redundancyChecks,
     // Apply default updates
     for (auto const& availableQuery : available)
     {
-        if (availableQuery.second != CUSTOM && availableQuery.second != MODULE)
+        if (availableQuery.second != PENDING && availableQuery.second != CUSTOM && availableQuery.second != MODULE)
             ApplyUpdateFile(availableQuery);
     }
 
-    // Apply only custom/module updates
+    // Apply only pending/custom/module updates
     for (auto const& availableQuery : available)
     {
-        if (availableQuery.second == CUSTOM || availableQuery.second == MODULE)
+        if (availableQuery.second == PENDING || availableQuery.second == CUSTOM || availableQuery.second == MODULE)
             ApplyUpdateFile(availableQuery);
     }
 
@@ -483,7 +481,7 @@ void UpdateFetcher::CleanUp(AppliedFileStorage const& storage) const
         return;
 
     std::stringstream update;
-    size_t remaining = storage.size();
+    std::size_t remaining = storage.size();
 
     update << "DELETE FROM `updates` WHERE `name` IN(";
 

@@ -53,8 +53,9 @@ ObjectData const creatureData[] =
 
 ObjectData const objectData[] =
 {
-    { GO_PORTCULLIS_CHROMAGGUS, DATA_GO_CHROMAGGUS_DOOR },
-    { GO_PORTCULLIS_CHROMAGGUS_EXIT, DATA_GO_CHROMAGGUS_DOOR_EXIT }
+    { GO_PORTCULLIS_CHROMAGGUS,      DATA_GO_CHROMAGGUS_DOOR      },
+    { GO_PORTCULLIS_CHROMAGGUS_EXIT, DATA_GO_CHROMAGGUS_DOOR_EXIT },
+    { 0,                             0                            }
 };
 
 Position const SummonPosition[8] =
@@ -478,37 +479,26 @@ enum ShadowFlame
 };
 
 // 22539 - Shadowflame (used in Blackwing Lair)
-class spell_bwl_shadowflame : public SpellScriptLoader
+class spell_bwl_shadowflame : public SpellScript
 {
-public:
-    spell_bwl_shadowflame() : SpellScriptLoader("spell_bwl_shadowflame") { }
+    PrepareSpellScript(spell_bwl_shadowflame);
 
-    class spell_bwl_shadowflame_SpellScript : public SpellScript
+    bool Validate(SpellInfo const* /*spellInfo*/) override
     {
-        PrepareSpellScript(spell_bwl_shadowflame_SpellScript);
+        return ValidateSpellInfo({ SPELL_ONYXIA_SCALE_CLOAK, SPELL_SHADOW_FLAME_DOT });
+    }
 
-        bool Validate(SpellInfo const* /*spellInfo*/) override
-        {
-            return ValidateSpellInfo({ SPELL_ONYXIA_SCALE_CLOAK, SPELL_SHADOW_FLAME_DOT });
-        }
-
-        void HandleEffectScriptEffect(SpellEffIndex /*effIndex*/)
-        {
-            // If the victim of the spell does not have "Onyxia Scale Cloak" - add the Shadow Flame DoT (22682)
-            if (Unit* victim = GetHitUnit())
-                if (!victim->HasAura(SPELL_ONYXIA_SCALE_CLOAK))
-                    victim->AddAura(SPELL_SHADOW_FLAME_DOT, victim);
-        }
-
-        void Register() override
-        {
-            OnEffectHitTarget += SpellEffectFn(spell_bwl_shadowflame_SpellScript::HandleEffectScriptEffect, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
-        }
-    };
-
-    SpellScript* GetSpellScript() const override
+    void HandleEffectScriptEffect(SpellEffIndex /*effIndex*/)
     {
-        return new spell_bwl_shadowflame_SpellScript;
+        // If the victim of the spell does not have "Onyxia Scale Cloak" - add the Shadow Flame DoT (22682)
+        if (Unit* victim = GetHitUnit())
+            if (!victim->HasAura(SPELL_ONYXIA_SCALE_CLOAK))
+                victim->AddAura(SPELL_SHADOW_FLAME_DOT, victim);
+    }
+
+    void Register() override
+    {
+        OnEffectHitTarget += SpellEffectFn(spell_bwl_shadowflame::HandleEffectScriptEffect, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
     }
 };
 
@@ -539,7 +529,6 @@ public:
 void AddSC_instance_blackwing_lair()
 {
     new instance_blackwing_lair();
-    new spell_bwl_shadowflame();
+    RegisterSpellScript(spell_bwl_shadowflame);
     new at_orb_of_command();
 }
-

@@ -26,7 +26,7 @@ void Acore::BroadcastTextBuilder::operator()(WorldPacket& data, LocaleConstant l
     ChatHandler::BuildChatPacket(data, _msgType, bct ? Language(bct->LanguageID) : LANG_UNIVERSAL, _source, _target, bct ? bct->GetText(locale, _gender) : "", _achievementId, "", locale);
 }
 
-size_t Acore::BroadcastTextBuilder::operator()(WorldPacket* data, LocaleConstant locale) const
+std::size_t Acore::BroadcastTextBuilder::operator()(WorldPacket* data, LocaleConstant locale) const
 {
     BroadcastText const* bct = sObjectMgr->GetBroadcastText(_textId);
     return ChatHandler::BuildChatPacket(*data, _msgType, bct ? Language(bct->LanguageID) : LANG_UNIVERSAL, _source, _target, bct ? bct->GetText(locale, _gender) : "", _achievementId, "", locale);
@@ -39,7 +39,8 @@ void Acore::CustomChatTextBuilder::operator()(WorldPacket& data, LocaleConstant 
 
 void Acore::AcoreStringChatBuilder::operator()(WorldPacket& data, LocaleConstant locale) const
 {
-    char const* text = sObjectMgr->GetAcoreString(_textId, locale);
+    std::string strtext = sObjectMgr->GetAcoreString(_textId, locale);
+    char const* text = strtext.c_str();
 
     if (_args)
     {
@@ -47,7 +48,7 @@ void Acore::AcoreStringChatBuilder::operator()(WorldPacket& data, LocaleConstant
         va_list ap;
         va_copy(ap, *_args);
 
-        static size_t const BufferSize = 2048;
+        static std::size_t const BufferSize = 2048;
         char strBuffer[BufferSize];
         vsnprintf(strBuffer, BufferSize, text, ap);
         va_end(ap);

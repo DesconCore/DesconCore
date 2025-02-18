@@ -241,7 +241,7 @@ void Guild::BankEventLogEntry::WritePacket(WorldPackets::Guild::GuildBankLogQuer
     bankLogEntry.TimeOffset = int32(GameTime::GetGameTime().count() - m_timestamp);
     bankLogEntry.EntryType = int8(m_eventType);
 
-    switch(m_eventType)
+    switch (m_eventType)
     {
         case GUILD_BANK_LOG_DEPOSIT_ITEM:
         case GUILD_BANK_LOG_WITHDRAW_ITEM:
@@ -1187,7 +1187,7 @@ void Guild::OnPlayerStatusChange(Player* player, uint32 flag, bool state)
 
 bool Guild::SetName(std::string_view const& name)
 {
-    if (m_name == name || name.empty() || name.length() > 24 || sObjectMgr->IsReservedName(name) || sObjectMgr->IsProfanityName(name) || !ObjectMgr::IsValidCharterName(name))
+    if (m_name == name || name.empty() || name.length() > 24 || !ObjectMgr::IsValidCharterName(name))
     {
         return false;
     }
@@ -1447,7 +1447,7 @@ void Guild::HandleInviteMember(WorldSession* session, std::string const& name)
     uint32 memberLimit = sConfigMgr->GetOption<uint32>("Guild.MemberLimit", 0);
     if (memberLimit > 0 && player->GetGuild()->GetMemberCount() >= memberLimit)
     {
-        ChatHandler(player->GetSession()).PSendSysMessage("Your guild has reached the maximum amount of members (%u). You cannot send another invite until the guild member count is lower.", memberLimit);
+        ChatHandler(player->GetSession()).PSendSysMessage("Your guild has reached the maximum amount of members ({}). You cannot send another invite until the guild member count is lower.", memberLimit);
         SendCommandResult(session, GUILD_COMMAND_INVITE, ERR_GUILD_INTERNAL, name);
         return;
     }
@@ -1556,11 +1556,14 @@ void Guild::HandleRemoveMember(WorldSession* session, std::string_view name)
                 SendCommandResult(session, GUILD_COMMAND_REMOVE, ERR_GUILD_RANK_TOO_HIGH_S, name);
             else
             {
+                // Copy values since everything will be deleted in DeleteMember().
                 ObjectGuid guid = member->GetGUID();
+                std::string memberName = member->GetName();
+
                 // After call to DeleteMember pointer to member becomes invalid
                 DeleteMember(guid, false, true);
                 _LogEvent(GUILD_EVENT_LOG_UNINVITE_PLAYER, player->GetGUID(), guid);
-                _BroadcastEvent(GE_REMOVED, ObjectGuid::Empty, member->GetName(), player->GetName());
+                _BroadcastEvent(GE_REMOVED, ObjectGuid::Empty, memberName, player->GetName());
             }
         }
     }
@@ -1703,6 +1706,9 @@ bool Guild::HandleMemberWithdrawMoney(WorldSession* session, uint32 amount, bool
         return false;
 
     if (uint32(_GetMemberRemainingMoney(*member)) < amount)   // Check if we have enough slot/money today
+        return false;
+
+    if (!(_GetRankRights(member->GetRankId()) & GR_RIGHT_WITHDRAW_REPAIR) && repair)
         return false;
 
     // Call script after validation and before money transfer.

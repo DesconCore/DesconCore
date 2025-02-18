@@ -542,9 +542,12 @@ class spell_warr_intimidating_shout : public SpellScript
 {
     PrepareSpellScript(spell_warr_intimidating_shout);
 
-    void FilterTargets(std::list<WorldObject*>& unitList)
+    void FilterTargets(std::list<WorldObject*>& targets)
     {
-        unitList.remove(GetExplTargetWorldObject());
+        targets.remove(GetExplTargetWorldObject());
+        uint32 maxTargets = GetSpellInfo()->MaxAffectedTargets;
+        if (targets.size() > maxTargets)
+            targets.resize(maxTargets);
     }
 
     void Register() override
@@ -923,4 +926,3 @@ void AddSC_warrior_spell_scripts()
     RegisterSpellScript(spell_warr_vigilance_trigger);
     RegisterSpellScript(spell_warr_t3_prot_8p_bonus);
 }
-

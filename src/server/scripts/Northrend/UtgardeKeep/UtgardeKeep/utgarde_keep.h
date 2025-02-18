@@ -19,9 +19,12 @@
 #define DEF_UTGARDE_KEEP_H
 
 #include "CreatureAIImpl.h"
-#include "SpellScript.h"
 
 #define UtgardeKeepScriptName "instance_utgarde_keep"
+
+#define DataHeader "UK"
+
+uint32 const EncounterCount = 3;
 
 enum eData
 {
@@ -83,5 +86,7 @@ inline AI* GetUtgardeKeepAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, UtgardeKeepScriptName);
 }
+
+#define RegisterUtgardeKeepCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetUtgardeKeepAI)
 
 #endif

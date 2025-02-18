@@ -22,6 +22,7 @@
 #include "Duration.h"
 #include "Log.h"
 #include "MotdMgr.h"
+#include "QueryResult.h"
 #include "SRP6.h"
 #include "Util.h"
 #include "World.h"
@@ -75,7 +76,7 @@ void RASession::Start()
     LOG_INFO("commands.ra", "User {} (IP: {}) authenticated correctly to RA", username, GetRemoteIpAddress());
 
     // Authentication successful, send the motd
-    Send(std::string(std::string(sMotdMgr->GetMotd()) + "\r\n").c_str());
+    Send(std::string(std::string(sMotdMgr->GetMotd(DEFAULT_LOCALE)) + "\r\n").c_str());
 
     // Read commands
     for (;;)
@@ -94,7 +95,7 @@ int RASession::Send(std::string_view data)
 {
     std::ostream os(&_writeBuffer);
     os << data;
-    size_t written = _socket.send(_writeBuffer.data());
+    std::size_t written = _socket.send(_writeBuffer.data());
     _writeBuffer.consume(written);
     return written;
 }
@@ -102,7 +103,7 @@ int RASession::Send(std::string_view data)
 std::string RASession::ReadString()
 {
     boost::system::error_code error;
-    size_t read = boost::asio::read_until(_socket, _readBuffer, "\r\n", error);
+    std::size_t read = boost::asio::read_until(_socket, _readBuffer, "\r\n", error);
     if (!read)
     {
         _socket.close();

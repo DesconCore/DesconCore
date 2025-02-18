@@ -15,11 +15,11 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "CreatureScript.h"
 #include "InstanceMapScript.h"
 #include "Player.h"
 #include "ScriptedCreature.h"
 #include "forge_of_souls.h"
+#include "Group.h"
 
 BossBoundaryData const boundaries =
 {
@@ -70,8 +70,24 @@ public:
             return false;
         }
 
-        void OnPlayerEnter(Player* /*plr*/) override
+        void OnPlayerEnter(Player* player) override
         {
+            if (teamIdInInstance == TEAM_NEUTRAL)
+            {
+                if (Group* group = player->GetGroup())
+                {
+                    if (Player* gLeader = ObjectAccessor::FindPlayer(group->GetLeaderGUID()))
+                        teamIdInInstance = Player::TeamIdForRace(gLeader->getRace());
+                    else
+                        teamIdInInstance = player->GetTeamId();
+                }
+                else
+                    teamIdInInstance = player->GetTeamId();
+            }
+
+            if (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_GROUP))
+                player->SetFaction((teamIdInInstance == TEAM_HORDE) ? 1610 : 1);
+
             // this will happen only after crash and loading the instance from db
             if (m_auiEncounter[0] == DONE && m_auiEncounter[1] == DONE && (!NPC_LeaderSecondGUID || !instance->GetCreature(NPC_LeaderSecondGUID)))
             {
@@ -87,7 +103,17 @@ public:
                 Map::PlayerList const& players = instance->GetPlayers();
                 if (!players.IsEmpty())
                     if (Player* player = players.begin()->GetSource())
-                        teamIdInInstance = player->GetTeamId();
+                    {
+                        if (Group* group = player->GetGroup())
+                        {
+                            if (Player* gLeader = ObjectAccessor::FindPlayer(group->GetLeaderGUID()))
+                                teamIdInInstance = Player::TeamIdForRace(gLeader->getRace());
+                            else
+                                teamIdInInstance = player->GetTeamId();
+                        }
+                        else
+                            teamIdInInstance = player->GetTeamId();
+                    }
             }
 
             switch (creature->GetEntry())
@@ -151,7 +177,7 @@ public:
 
         void SetData(uint32 type, uint32 data) override
         {
-            switch(type)
+            switch (type)
             {
                 case DATA_BRONJAHM:
                     m_auiEncounter[type] = data;
@@ -180,22 +206,22 @@ public:
 
         bool CheckAchievementCriteriaMeet(uint32 criteria_id, Player const*  /*source*/, Unit const*  /*target*/, uint32  /*miscvalue1*/) override
         {
-            switch(criteria_id)
+            switch (criteria_id)
             {
                 case 12752: // Soul Power
-                    if( Creature* c = instance->GetCreature(NPC_BronjahmGUID) )
+                    if (Creature* c = instance->GetCreature(NPC_BronjahmGUID))
                     {
                         std::list<Creature*> L;
                         uint8 count = 0;
                         c->GetCreaturesWithEntryInRange(L, 200.0f, 36535); // find all Corrupted Soul Fragment (36535)
                         for( std::list<Creature*>::const_iterator itr = L.begin(); itr != L.end(); ++itr )
-                            if( (*itr)->IsAlive() )
+                            if ((*itr)->IsAlive())
                                 ++count;
                         return (count >= 4);
                     }
                     break;
                 case 12976:
-                    if( Creature* c = instance->GetCreature(NPC_DevourerGUID) )
+                    if (Creature* c = instance->GetCreature(NPC_DevourerGUID))
                         return (bool)c->AI()->GetData(1);
                     break;
             }
@@ -219,4 +245,3 @@ void AddSC_instance_forge_of_souls()
 {
     new instance_forge_of_souls();
 }
-

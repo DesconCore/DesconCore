@@ -58,7 +58,8 @@ namespace Acore
 
         void operator()(WorldPacket& data, LocaleConstant loc_idx)
         {
-            char const* text = sObjectMgr->GetAcoreString(_textId, loc_idx);
+            std::string strtext = sObjectMgr->GetAcoreString(_textId, loc_idx);
+            char const* text = strtext.c_str();
             if (_args)
             {
                 // we need copy va_list before use or original va_list will corrupted
@@ -95,9 +96,12 @@ namespace Acore
 
         void operator()(WorldPacket& data, LocaleConstant loc_idx)
         {
-            char const* text = sObjectMgr->GetAcoreString(_textId, loc_idx);
-            char const* arg1str = _arg1 ? sObjectMgr->GetAcoreString(_arg1, loc_idx) : "";
-            char const* arg2str = _arg2 ? sObjectMgr->GetAcoreString(_arg2, loc_idx) : "";
+            std::string strtext = sObjectMgr->GetAcoreString(_textId, loc_idx);
+            char const* text = strtext.c_str();
+            std::string stragr1str = sObjectMgr->GetAcoreString(_arg1, loc_idx);
+            char const* arg1str = _arg1 ? stragr1str.c_str() : "";
+            std::string strarg2str = sObjectMgr->GetAcoreString(_arg2, loc_idx);
+            char const* arg2str = _arg2 ? strarg2str.c_str() : "";
 
             char str[2048];
             snprintf(str, 2048, text, arg1str, arg2str);
@@ -146,6 +150,7 @@ Battleground::Battleground()
     m_LastResurrectTime = 0;
     m_ArenaType         = 0;
     m_IsArena           = false;
+    m_IsTemplate        = true;
     m_WinnerId          = PVP_TEAM_NEUTRAL;
     m_StartTime         = 0;
     m_ResetStatTimer    = 0;
@@ -438,13 +443,19 @@ inline void Battleground::_ProcessProgress(uint32 diff)
         if (newtime > (MINUTE * IN_MILLISECONDS))
         {
             if (newtime / (MINUTE * IN_MILLISECONDS) != m_PrematureCountDownTimer / (MINUTE * IN_MILLISECONDS))
-                PSendMessageToAll(LANG_BATTLEGROUND_PREMATURE_FINISH_WARNING, CHAT_MSG_SYSTEM, nullptr, (uint32)(m_PrematureCountDownTimer / (MINUTE * IN_MILLISECONDS)));
+                GetBgMap()->DoForAllPlayers([&](Player* player)
+                    {
+                        ChatHandler(player->GetSession()).PSendSysMessage(LANG_BATTLEGROUND_PREMATURE_FINISH_WARNING, (uint32)(m_PrematureCountDownTimer / (MINUTE * IN_MILLISECONDS)));
+                    });
         }
         else
         {
             //announce every 15 seconds
             if (newtime / (15 * IN_MILLISECONDS) != m_PrematureCountDownTimer / (15 * IN_MILLISECONDS))
-                PSendMessageToAll(LANG_BATTLEGROUND_PREMATURE_FINISH_WARNING_SECS, CHAT_MSG_SYSTEM, nullptr, (uint32)(m_PrematureCountDownTimer / IN_MILLISECONDS));
+                GetBgMap()->DoForAllPlayers([&](Player* player)
+                    {
+                        ChatHandler(player->GetSession()).PSendSysMessage(LANG_BATTLEGROUND_PREMATURE_FINISH_WARNING_SECS, (uint32)(m_PrematureCountDownTimer / IN_MILLISECONDS));
+                    });
         }
         m_PrematureCountDownTimer = newtime;
     }
@@ -605,6 +616,8 @@ inline void Battleground::_ProcessJoin(uint32 diff)
                         }
                 m_ToBeTeleported.clear();
             }
+
+            sScriptMgr->OnArenaStart(this);
         }
         else
         {
@@ -618,7 +631,7 @@ inline void Battleground::_ProcessJoin(uint32 diff)
 
             // Announce BG starting
             if (sWorld->getBoolConfig(CONFIG_BATTLEGROUND_QUEUE_ANNOUNCER_ENABLE))
-                sWorld->SendWorldText(LANG_BG_STARTED_ANNOUNCE_WORLD, GetName().c_str(), std::min(GetMinLevel(), (uint32)80), std::min(GetMaxLevel(), (uint32)80));
+                ChatHandler(nullptr).SendWorldText(LANG_BG_STARTED_ANNOUNCE_WORLD, GetName(), std::min(GetMinLevel(), (uint32)80), std::min(GetMaxLevel(), (uint32)80));
 
             sScriptMgr->OnBattlegroundStart(this);
         }
@@ -835,7 +848,7 @@ void Battleground::EndBattleground(PvPTeamId winnerTeamId)
         TeamId bgTeamId = player->GetBgTeamId();
 
         // should remove spirit of redemption
-        if (player->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
+        if (player->HasSpiritOfRedemptionAura())
             player->RemoveAurasByType(SPELL_AURA_MOD_SHAPESHIFT);
 
         if (!player->IsAlive())
@@ -917,46 +930,34 @@ void Battleground::EndBattleground(PvPTeamId winnerTeamId)
     }
 
     if (IsEventActive(EVENT_SPIRIT_OF_COMPETITION) && isBattleground())
-        SpiritofCompetitionEvent(winnerTeamId);
+        SpiritOfCompetitionEvent(winnerTeamId);
 
     sScriptMgr->OnBattlegroundEnd(this, GetTeamId(winnerTeamId));
 }
 
-bool Battleground::SpiritofCompetitionEvent(PvPTeamId winnerTeamId)
+void Battleground::SpiritOfCompetitionEvent(PvPTeamId winnerTeamId) const
 {
-    // Everyone is eligible for tabard reward
-    for (BattlegroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
-    {
-        Player* player = itr->second;
-        bool questStatus = player->GetQuestStatus(QUEST_FLAG_PARTICIPANT) != QUEST_STATUS_REWARDED;
-
-        if (player && questStatus)
-            player->CastSpell(player, SPELL_SPIRIT_OF_COMPETITION_PARTICIPANT, true);
-    }
-
-    // In case of a draw nobody get rewarded
-    if (winnerTeamId == PVP_TEAM_NEUTRAL)
-        return false;
+    bool isDraw = winnerTeamId == PVP_TEAM_NEUTRAL;
 
     std::vector<Player*> filteredPlayers;
+    GetBgMap()->DoForAllPlayers([&](Player* player)
+        {
+            // Reward all eligible players the participant reward
+            if (player->GetQuestStatus(QUEST_FLAG_PARTICIPANT) != QUEST_STATUS_REWARDED)
+                player->CastSpell(player, SPELL_SPIRIT_OF_COMPETITION_PARTICIPANT, true);
 
-    for (BattlegroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+            // Collect players of the winning team who has yet to recieve the winner reward
+            if (!isDraw && player->GetBgTeamId() == GetTeamId(winnerTeamId) &&
+                player->GetQuestStatus(QUEST_FLAG_WINNER) != QUEST_STATUS_REWARDED)
+                    filteredPlayers.push_back(player);
+        });
+
+    // Randomly select one player from winners team to recieve the reward, if any eligible
+    if (!filteredPlayers.empty())
     {
-        Player* player = itr->second;
-        bool playerTeam = player->GetBgTeamId() == GetTeamId(winnerTeamId);
-        bool questStatus = player->GetQuestStatus(QUEST_FLAG_WINNER) != QUEST_STATUS_REWARDED;
-
-        if (player && playerTeam && questStatus)
-            filteredPlayers.push_back(player);
+        Player* wPlayer = filteredPlayers[rand() % filteredPlayers.size()];
+        wPlayer->CastSpell(wPlayer, SPELL_SPIRIT_OF_COMPETITION_WINNER, true);
     }
-
-    if (filteredPlayers.size())
-    {
-        if (Player* wPlayer = filteredPlayers[rand() % filteredPlayers.size()])
-            wPlayer->CastSpell(wPlayer, SPELL_SPIRIT_OF_COMPETITION_WINNER, true);
-    }
-
-    return true;
 }
 
 uint32 Battleground::GetBonusHonorFromKill(uint32 kills) const
@@ -1010,6 +1011,10 @@ void Battleground::RemovePlayerAtLeave(Player* player)
     // BG subclass specific code
     RemovePlayer(player);
 
+    // should remove spirit of redemption
+    if (player->HasSpiritOfRedemptionAura())
+        player->RemoveAurasByType(SPELL_AURA_MOD_SHAPESHIFT);
+
     // if the player was a match participant
     if (participant)
     {
@@ -1052,9 +1057,6 @@ void Battleground::RemovePlayerAtLeave(Player* player)
             sBattlegroundMgr->ScheduleQueueUpdate(0, 0, bgQueueTypeId, bgTypeId, GetBracketId());
         }
     }
-
-    // Remove shapeshift auras
-    player->RemoveAurasByType(SPELL_AURA_MOD_SHAPESHIFT);
 
     player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE, PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
 
@@ -1306,7 +1308,7 @@ void Battleground::ReadyMarkerClicked(Player* p)
     readyMarkerClickedSet.insert(p->GetGUID());
     uint32 count = readyMarkerClickedSet.size();
     uint32 req = ArenaTeam::GetReqPlayersForType(GetArenaType());
-    p->GetSession()->SendNotification("You are marked as ready %u/%u", count, req);
+    ChatHandler(p->GetSession()).SendNotification("You are marked as ready {}/{}", count, req);
     if (count == req)
     {
         m_Events |= BG_STARTING_EVENT_2;
@@ -1654,75 +1656,11 @@ bool Battleground::AddSpiritGuide(uint32 type, float x, float y, float z, float 
     return false;
 }
 
-void Battleground::SendMessageToAll(uint32 entry, ChatMsg type, Player const* source)
-{
-    if (!entry)
-        return;
-
-    Acore::BattlegroundChatBuilder bg_builder(type, entry, source);
-    Acore::LocalizedPacketDo<Acore::BattlegroundChatBuilder> bg_do(bg_builder);
-    BroadcastWorker(bg_do);
-}
-
-void Battleground::PSendMessageToAll(uint32 entry, ChatMsg type, Player const* source, ...)
-{
-    if (!entry)
-        return;
-
-    va_list ap;
-    va_start(ap, source);
-
-    Acore::BattlegroundChatBuilder bg_builder(type, entry, source, &ap);
-    Acore::LocalizedPacketDo<Acore::BattlegroundChatBuilder> bg_do(bg_builder);
-    BroadcastWorker(bg_do);
-
-    va_end(ap);
-}
-
-void Battleground::SendWarningToAll(uint32 entry, ...)
-{
-    if (!entry)
-        return;
-
-    std::map<uint32, WorldPacket> localizedPackets;
-    for (BattlegroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
-    {
-        if (localizedPackets.find(itr->second->GetSession()->GetSessionDbLocaleIndex()) == localizedPackets.end())
-        {
-            char const* format = sObjectMgr->GetAcoreString(entry, itr->second->GetSession()->GetSessionDbLocaleIndex());
-
-            char str[1024];
-            va_list ap;
-            va_start(ap, entry);
-            vsnprintf(str, 1024, format, ap);
-            va_end(ap);
-
-            ChatHandler::BuildChatPacket(localizedPackets[itr->second->GetSession()->GetSessionDbLocaleIndex()], CHAT_MSG_RAID_BOSS_EMOTE, LANG_UNIVERSAL, nullptr, nullptr, str);
-        }
-
-        itr->second->SendDirectMessage(&localizedPackets[itr->second->GetSession()->GetSessionDbLocaleIndex()]);
-    }
-}
-
-void Battleground::SendMessage2ToAll(uint32 entry, ChatMsg type, Player const* source, uint32 arg1, uint32 arg2)
-{
-    Acore::Battleground2ChatBuilder bg_builder(type, entry, source, arg1, arg2);
-    Acore::LocalizedPacketDo<Acore::Battleground2ChatBuilder> bg_do(bg_builder);
-    BroadcastWorker(bg_do);
-}
-
 void Battleground::EndNow()
 {
     RemoveFromBGFreeSlotQueue();
     SetStatus(STATUS_WAIT_LEAVE);
     SetEndTime(0);
-}
-
-// To be removed
-char const* Battleground::GetAcoreString(int32 entry)
-{
-    // FIXME: now we have different DBC locales and need localized message for each target client
-    return sObjectMgr->GetAcoreStringForDBCLocale(entry);
 }
 
 void Battleground::HandleTriggerBuff(GameObject* gameObject)
@@ -1882,6 +1820,7 @@ GraveyardStruct const* Battleground::GetClosestGraveyard(Player* player)
 
 void Battleground::SetBracket(PvPDifficultyEntry const* bracketEntry)
 {
+    m_IsTemplate = false;
     m_BracketId = bracketEntry->GetBracketId();
     SetLevelRange(bracketEntry->minLevel, bracketEntry->maxLevel);
 }

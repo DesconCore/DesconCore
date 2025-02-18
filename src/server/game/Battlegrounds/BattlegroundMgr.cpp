@@ -334,6 +334,18 @@ Battleground* BattlegroundMgr::GetBattlegroundTemplate(BattlegroundTypeId bgType
     return bgs.empty() ? nullptr : bgs.begin()->second;
 }
 
+std::vector<Battleground const*> BattlegroundMgr::GetActiveBattlegrounds()
+{
+    std::vector<Battleground const*> result;
+
+    for (auto const& [bgType, bgData] : bgDataStore)
+        for (auto const& [id, bg] : bgData._Battlegrounds)
+            if (bg->GetStatus() == STATUS_WAIT_JOIN || bg->GetStatus() == STATUS_IN_PROGRESS)
+                result.push_back(static_cast<const Battleground*>(bg));
+
+    return result;
+}
+
 uint32 BattlegroundMgr::CreateClientVisibleInstanceId(BattlegroundTypeId bgTypeId, BattlegroundBracketId bracket_id)
 {
     if (IsArenaType(bgTypeId))
@@ -467,7 +479,7 @@ void BattlegroundMgr::LoadBattlegroundTemplates()
 
         BattlegroundTypeId bgTypeId = static_cast<BattlegroundTypeId>(fields[0].Get<uint32>());
 
-        if (DisableMgr::IsDisabledFor(DISABLE_TYPE_BATTLEGROUND, bgTypeId, nullptr))
+        if (sDisableMgr->IsDisabledFor(DISABLE_TYPE_BATTLEGROUND, bgTypeId, nullptr))
             continue;
 
         // can be overwrite by values from DB
@@ -608,7 +620,7 @@ void BattlegroundMgr::BuildBattlegroundListPacket(WorldPacket* data, ObjectGuid 
         *data << uint32(0);                                 // unk (count?)
     else                                                    // battleground
     {
-        size_t count_pos = data->wpos();
+        std::size_t count_pos = data->wpos();
         *data << uint32(0);                                 // number of bg instances
 
         auto const& it = bgDataStore.find(bgTypeId);
@@ -722,12 +734,12 @@ void BattlegroundMgr::ToggleTesting()
     if (sWorld->getBoolConfig(CONFIG_DEBUG_BATTLEGROUND))
     {
         m_Testing = true;
-        sWorld->SendWorldText(LANG_DEBUG_BG_CONF);
+        ChatHandler(nullptr).SendWorldText(LANG_DEBUG_BG_CONF);
     }
     else
     {
         m_Testing = !m_Testing;
-        sWorld->SendWorldText(m_Testing ? LANG_DEBUG_BG_ON : LANG_DEBUG_BG_OFF);
+        ChatHandler(nullptr).SendWorldText(m_Testing ? LANG_DEBUG_BG_ON : LANG_DEBUG_BG_OFF);
     }
 }
 
@@ -736,12 +748,12 @@ void BattlegroundMgr::ToggleArenaTesting()
     if (sWorld->getBoolConfig(CONFIG_DEBUG_ARENA))
     {
         m_ArenaTesting = true;
-        sWorld->SendWorldText(LANG_DEBUG_ARENA_CONF);
+        ChatHandler(nullptr).SendWorldText(LANG_DEBUG_ARENA_CONF);
     }
     else
     {
         m_ArenaTesting = !m_ArenaTesting;
-        sWorld->SendWorldText(m_ArenaTesting ? LANG_DEBUG_ARENA_ON : LANG_DEBUG_ARENA_OFF);
+        ChatHandler(nullptr).SendWorldText(m_ArenaTesting ? LANG_DEBUG_ARENA_ON : LANG_DEBUG_ARENA_OFF);
     }
 }
 
