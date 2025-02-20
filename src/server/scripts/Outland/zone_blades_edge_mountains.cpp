@@ -1159,9 +1159,14 @@ class spell_oscillating_field : public SpellScript
     }
 };
 
+/*######
+##  Quest 10720 in development
+######*/
+
 enum Marmot
 {
-    SPELL_COAX_MARMOT = 38544
+    SPELL_CHARM_REXXARS_RODENT   = 38586,
+    SPELL_COAX_MARMOT            = 38544
 };
 
 struct npc_marmot : public PossessedAI
@@ -1170,9 +1175,7 @@ struct npc_marmot : public PossessedAI
 
     void OnCharmed(bool apply) override
     {
-        if (apply)
-            me->SetLevel(me->GetCharmerOrOwner()->GetLevel());
-        else
+        if (!apply)
             me->GetCharmerOrOwner()->RemoveAurasDueToSpell(SPELL_COAX_MARMOT);
     }
 };
@@ -1188,7 +1191,9 @@ class spell_coax_marmot : public AuraScript
         if (!caster || caster->GetCharm())
             return;
 
-        caster->RemoveAurasDueToSpell(SPELL_COAX_MARMOT);
+        caster->SetVisible(false);
+
+        caster->RemoveAurasByType(SPELL_AURA_DUMMY);
     }
 
     void HandleEffectRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -1197,12 +1202,44 @@ class spell_coax_marmot : public AuraScript
             if (GetSpellInfo()->Effects[EFFECT_0].MiscValue >= 0 && charm->GetEntry() == uint32(GetSpellInfo()->Effects[EFFECT_0].MiscValue))
                 if (Creature* marmot = charm->ToCreature())
                     marmot->DespawnOrUnsummon();
+
+        GetCaster()->SetVisible(true);
     }
 
     void Register() override
     {
         OnEffectApply += AuraEffectApplyFn(spell_coax_marmot::HandleEffectApply, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
         OnEffectRemove += AuraEffectRemoveFn(spell_coax_marmot::HandleEffectRemove, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+    }
+};
+
+class spell_charm_rexxars_rodent : public AuraScript
+{
+    PrepareAuraScript(spell_charm_rexxars_rodent);
+
+    void OnRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        GetCaster()->RemoveAurasDueToSpell(SPELL_COAX_MARMOT);
+    }
+
+    void Register() override
+    {
+        AfterEffectRemove += AuraEffectRemoveFn(spell_charm_rexxars_rodent::OnRemove, EFFECT_0, SPELL_AURA_MOD_POSSESS, AURA_EFFECT_HANDLE_REAL);
+    }
+};
+
+class spell_stealth_marmot : public AuraScript
+{
+    PrepareAuraScript(spell_stealth_marmot);
+
+    void ApplyStealth(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        GetTarget()->m_stealth.AddValue(STEALTH_GENERAL, 299);
+    }
+
+    void Register() override
+    {
+        AfterEffectApply += AuraEffectApplyFn(spell_stealth_marmot::ApplyStealth, EFFECT_0, SPELL_AURA_MOD_STEALTH, AURA_EFFECT_HANDLE_REAL);
     }
 };
 
@@ -1219,8 +1256,9 @@ void AddSC_blades_edge_mountains()
     new go_simon_cluster();
     new go_apexis_relic();
     new npc_oscillating_frequency_scanner_master_bunny();
-    new spell_oscillating_field();
+    RegisterSpellScript(spell_oscillating_field);
     RegisterCreatureAI(npc_marmot);
     RegisterSpellScript(spell_coax_marmot);
-    RegisterSpellScript(spell_oscillating_field);
+    RegisterSpellScript(spell_charm_rexxars_rodent);
+    RegisterSpellScript(spell_stealth_marmot);
 }

@@ -297,15 +297,53 @@ class spell_q10714_on_spirits_wings : public SpellScript
     }
 };
 
+enum Q10720
+{
+    SPELL_GREEN_EYE_GROG_CREDIT        = 38996,
+    SPELL_RIPE_MOONSHINE_CREDIT        = 38997,
+    SPELL_FERMENTED_SEED_BEER_CREDIT   = 38998,
+
+    NPC_GREEN_SPOT_GROG_KEG_CREDIT     = 22356,
+    NPC_RIPE_MOONSHINE_KEG_CREDIT      = 22367,
+    NPC_FERMENTED_SEED_BEER_KEG_CREDIT = 22368
+};
+
 class spell_q10720_the_smallest_creature : public SpellScript
 {
     PrepareSpellScript(spell_q10720_the_smallest_creature);
 
+    bool Validate(SpellInfo const* /*spellEntry*/) override
+    {
+        return ValidateSpellInfo(
+        {
+            SPELL_GREEN_EYE_GROG_CREDIT,
+            SPELL_RIPE_MOONSHINE_CREDIT,
+            SPELL_FERMENTED_SEED_BEER_CREDIT
+        });
+    }
+
     void HandleScriptEffect(SpellEffIndex /*effIndex*/)
     {
-        if (GetCaster() && GetHitUnit())
-            if (Player* player = GetCaster()->GetCharmerOrOwnerPlayerOrPlayerItself())
-                player->KilledMonsterCredit(GetHitUnit()->GetEntry());
+        if (Player* player = GetCaster()->GetCharmerOrOwnerPlayerOrPlayerItself())
+        {
+            uint32 spellId = 0;
+            switch (GetHitCreature()->GetEntry())
+            {
+                case NPC_GREEN_SPOT_GROG_KEG_CREDIT:
+                    spellId = SPELL_GREEN_EYE_GROG_CREDIT;
+                    break;
+                case NPC_RIPE_MOONSHINE_KEG_CREDIT:
+                    spellId = SPELL_RIPE_MOONSHINE_CREDIT;
+                    break;
+                case NPC_FERMENTED_SEED_BEER_KEG_CREDIT:
+                    spellId = SPELL_FERMENTED_SEED_BEER_CREDIT;
+                    break;
+                default:
+                    break;
+            }
+
+            player->CastSpell((Unit*)nullptr, spellId, true);
+        }
     }
 
     void Register() override
