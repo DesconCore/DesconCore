@@ -1175,8 +1175,18 @@ struct npc_marmot : public PossessedAI
 
     void OnCharmed(bool apply) override
     {
+        Unit* owner = me->GetCharmerOrOwner();
+        Player* player = owner->ToPlayer();
+
         if (!apply)
-            me->GetCharmerOrOwner()->RemoveAurasDueToSpell(SPELL_COAX_MARMOT);
+        {
+            player->SetVisible(true);
+            player->RemoveAurasDueToSpell(SPELL_COAX_MARMOT);
+        }
+        else
+        {
+            player->SetVisible(false);
+        }
     }
 };
 
@@ -1188,10 +1198,11 @@ class spell_coax_marmot : public AuraScript
     {
         // if you take DC during the charm it will be removed
         Unit* caster = GetCaster();
-        if (!caster || caster->GetCharm())
+        if (!caster)
             return;
 
-        caster->SetVisible(false);
+        if (caster->GetCharm())
+            return;
 
         caster->RemoveAurasByType(SPELL_AURA_DUMMY);
     }
@@ -1202,8 +1213,6 @@ class spell_coax_marmot : public AuraScript
             if (GetSpellInfo()->Effects[EFFECT_0].MiscValue >= 0 && charm->GetEntry() == uint32(GetSpellInfo()->Effects[EFFECT_0].MiscValue))
                 if (Creature* marmot = charm->ToCreature())
                     marmot->DespawnOrUnsummon();
-
-        GetCaster()->SetVisible(true);
     }
 
     void Register() override
