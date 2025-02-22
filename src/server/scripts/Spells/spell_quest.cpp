@@ -2550,6 +2550,23 @@ class spell_q11146_capture_raptor : public AuraScript
     }
 };
 
+class spell_12779_call_of_the_frostbrood : public SpellScript
+{
+    PrepareSpellScript(spell_12779_call_of_the_frostbrood);
+
+    void SetDest(SpellDestination& dest)
+    {
+        // Adjust effect summon position
+        Position const offset = { 0.0f, 0.0f, 5.0f, 0.0f };
+        dest.RelocateOffset(offset);
+    }
+
+    void Register() override
+    {
+        OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_12779_call_of_the_frostbrood::SetDest, EFFECT_0, TARGET_DEST_CASTER);
+    }
+};
+
 void AddSC_quest_spell_scripts()
 {
     RegisterSpellAndAuraScriptPair(spell_q11065_wrangle_some_aether_rays, spell_q11065_wrangle_some_aether_rays_aura);
@@ -2624,4 +2641,5 @@ void AddSC_quest_spell_scripts()
     RegisterSpellScript(spell_q10651_q10692_book_of_fel_names);
     RegisterSpellScript(spell_q9847_a_spirit_ally);
     RegisterSpellScript(spell_q11146_capture_raptor);
+    RegisterSpellScript(spell_12779_call_of_the_frostbrood);
 }
