@@ -19,6 +19,9 @@
 #include "PassiveAI.h"
 #include "Player.h"
 #include "ScriptedCreature.h"
+#include "Vehicle.h"
+#include <SpellScriptLoader.h>
+#include <CreatureTextMgr.h>
 
 /*####
 ## npc_valkyr_battle_maiden
@@ -137,7 +140,188 @@ public:
     };
 };
 
+enum QuestAnEndToAllThings
+{
+    SPELL_BOUNDARY_WARNING          = 51272,
+    SPELL_DEVOUR_HUMANOID           = 53110,
+    SPELL_DEVOUR_CONTROL_VEHICLE    = 53111,
+
+    SAY_CRUSADER_AGGRO              = 0,
+
+    EVENT_TAKE_OFF                  = 1,
+
+    POINT_TAKE_OFF                  = 1,
+
+    NPC_HEARTHGLEN_CRUSADER         = 29102,
+    NPC_TIRISFAL_CRUSADER           = 29103
+};
+
+class npc_frostbrood_vanquisher : public VehicleAI
+{
+public:
+    npc_frostbrood_vanquisher(Creature* creature) : VehicleAI(creature) { }
+
+    void JustDied(Unit* /*killer*/) override
+    {
+        me->DespawnOrUnsummon(3s, 0s);
+    }
+
+    void TakeJump(Unit* passenger)
+    {
+        Position pos = me->GetPosition();
+        pos.m_positionY -= 10.0f;
+        pos.m_positionZ += 8.0f;
+        me->SetPosition(pos);
+        passenger->SetSpeedRate(MOVE_RUN, 5.0f);
+    }
+
+    void PassengerBoarded(Unit* passenger, int8 seatId, bool apply) override
+    {
+        // Only apply the skill Devour Humanoid
+        if (!apply && seatId == 0)
+        {
+            if (Vehicle* frostbrood = me->GetVehicleKit())
+            {
+                if (Unit* crusader = frostbrood->GetPassenger(1))
+                {
+                    if (!crusader->IsCreature())
+                        return;
+                }
+            }
+
+            events.ScheduleEvent(EVENT_TAKE_OFF, 0s);
+            me->CastSpell(passenger, VEHICLE_SPELL_PARACHUTE, true);
+            passenger->RemoveAurasDueToSpell(SPELL_BOUNDARY_WARNING);
+            TakeJump(passenger);
+            RemoveVehicleFlag();
+        }
+    }
+
+    void UpdateAI(uint32 diff) override
+    {
+        events.Update(diff);
+
+        while (uint32 eventId = events.ExecuteEvent())
+        {
+            switch (eventId)
+            {
+                case EVENT_TAKE_OFF:
+                {
+                    me->DespawnOrUnsummon(4050);
+                    me->SetCanFly(true);
+                    me->SetOrientation(2.5f);
+                    me->SetSpeedRate(MOVE_FLIGHT, 1.0f);
+                    me->SetUnitMovementFlags(MOVEMENTFLAG_FLYING);
+                    Position pos = me->GetPosition();
+                    Position offset = { 14.0f, 14.0f, 16.0f, 0.0f };
+                    pos.RelocateOffset(offset);
+                    me->GetMotionMaster()->MovePoint(POINT_TAKE_OFF, pos);
+                    break;
+                }
+            }
+        }
+    }
+};
+
+class spell_devour_humanoid : public SpellScript
+{
+    PrepareSpellScript(spell_devour_humanoid);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_DEVOUR_CONTROL_VEHICLE });
+    }
+
+    SpellCastResult CheckRequirement()
+    {
+        if (!GetCaster()->HasAura(SPELL_DEVOUR_CONTROL_VEHICLE))
+            return SPELL_CAST_OK;
+        return SPELL_FAILED_DONT_REPORT;
+    }
+
+    SpellCastResult CheckCast()
+    {
+        uint32 cEntry[2] = { NPC_HEARTHGLEN_CRUSADER, NPC_TIRISFAL_CRUSADER };
+        for (uint8 i = 0; i < 2; i++)
+            if (GetCaster()->FindNearestCreature(cEntry[i], 15.0f, true))
+                return SPELL_CAST_OK;
+        return SPELL_FAILED_OUT_OF_RANGE;
+    }
+
+    void Register() override
+    {
+        OnCheckCast += SpellCheckCastFn(spell_devour_humanoid::CheckRequirement);
+        OnCheckCast += SpellCheckCastFn(spell_devour_humanoid::CheckCast);
+    }
+};
+
+struct npc_crusader : public ArcherAI
+{
+public:
+    npc_crusader(Creature* creature) : ArcherAI(creature) { }
+
+    void Reset() override
+    {
+        me->RemoveUnitFlag(UNIT_FLAG_STUNNED);
+    }
+
+    void JustEngagedWith(Unit* /*who*/) override
+    {
+        Talk(SAY_CRUSADER_AGGRO);
+    }
+
+    void SpellHit(Unit* /*caster*/, SpellInfo const* spell) override
+    {
+        if (spell->Id == SPELL_DEVOUR_HUMANOID)
+        {
+            me->CombatStop(true);
+            me->SetUnitFlag(UNIT_FLAG_STUNNED);
+        }
+    }
+};
+
+enum Frostbrood
+{
+    SAY_0 = 0
+};
+
+class spell_12779_call_of_the_frostbrood : public SpellScript
+{
+    PrepareSpellScript(spell_12779_call_of_the_frostbrood);
+
+    bool Validate(SpellInfo const* spellInfo) override
+    {
+        return ValidateSpellInfo({ uint32(spellInfo->GetEffect(EFFECT_0).CalcValue()) });
+    }
+
+    void HandleSummon(SpellEffIndex effIndex)
+    {
+        PreventHitDefaultEffect(effIndex);
+        uint32 entry = uint32(GetSpellInfo()->Effects[effIndex].MiscValue);
+        uint32 spellId = GetSpellInfo()->Effects[EFFECT_0].CalcValue();
+        Unit* caster = GetCaster();
+        Position pos = caster->GetPosition();
+        pos.m_positionZ += 5.0f;
+        Player* player = caster->ToPlayer();
+
+        if (Creature* frostbrood = caster->SummonCreature(entry, pos))
+        {
+            caster->CastSpell(frostbrood, spellId, true);
+            sCreatureTextMgr->SendChat(frostbrood, SAY_0, player, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, player);
+        }
+    }
+
+    void Register() override
+    {
+        OnEffectHit += SpellEffectFn(spell_12779_call_of_the_frostbrood::HandleSummon, EFFECT_0, SPELL_EFFECT_SUMMON);
+    }
+};
+
 void AddSC_the_scarlet_enclave()
 {
     new npc_valkyr_battle_maiden();
+    RegisterCreatureAI(npc_frostbrood_vanquisher);
+    RegisterSpellScript(spell_devour_humanoid);
+    RegisterCreatureAI(npc_crusader);
+    RegisterSpellScript(spell_12779_call_of_the_frostbrood);
 }
