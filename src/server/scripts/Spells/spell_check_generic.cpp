@@ -56,8 +56,40 @@ class spell_gen_target_is_in_combat : public SpellScript
     }
 };
 
+enum Raven
+{
+    NPC_INVIS_RAVEN_GOD_PORTA    = 23046,
+    SPELL_SUMMON_RAVEN_GOD       = 40098,
+    GO_THE_SAGA_OF_TEROKK        = 183050
+};
+
+class spell_summon_raven_god : public SpellScript
+{
+public:
+    PrepareSpellScript(spell_summon_raven_god);
+
+    bool Validate(SpellInfo const* /*SpellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_SUMMON_RAVEN_GOD });
+    }
+
+    SpellCastResult CheckRequirement()
+    {
+        if (Creature* bird = GetCaster()->FindNearestCreature(NPC_INVIS_RAVEN_GOD_PORTA, 50.0f))
+            if (!bird->HasAura(SPELL_SUMMON_RAVEN_GOD))
+                return SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW;
+        return SPELL_CAST_OK;
+    }
+
+    void Register() override
+    {
+        OnCheckCast += SpellCheckCastFn(spell_summon_raven_god::CheckRequirement);
+    }
+};
+
 void AddSC_check_generic_spell_scripts()
 {
     RegisterSpellScript(spell_gen_select_target_dead);
     RegisterSpellScript(spell_gen_target_is_in_combat);
+    RegisterSpellScript(spell_summon_raven_god);
 }
