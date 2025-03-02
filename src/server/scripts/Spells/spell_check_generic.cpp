@@ -87,9 +87,68 @@ public:
     }
 };
 
+class spell_dream_vision : public SpellScript
+{
+    PrepareSpellScript(spell_dream_vision);
+
+    void HandleSummon(SpellEffIndex effIndex)
+    {
+        PreventHitDefaultEffect(effIndex);
+        Unit* caster = GetCaster();
+        uint32 entry = uint32(GetSpellInfo()->Effects[effIndex].MiscValue);
+        SummonPropertiesEntry const* properties = sSummonPropertiesStore.LookupEntry(uint32(GetSpellInfo()->Effects[effIndex].MiscValueB));
+        uint32 duration = uint32(GetSpellInfo()->GetDuration());
+
+        Position pos = caster->GetPosition();
+        if (Creature* summon = caster->GetMap()->SummonCreature(entry, pos, properties, duration, caster, GetSpellInfo()->Id))
+        {
+            summon->SetHover(true);
+            summon->SetWaterWalking(true);
+            summon->SetFeatherFall(true);
+        }
+    }
+
+    void Register() override
+    {
+        OnEffectHit += SpellEffectFn(spell_dream_vision::HandleSummon, EFFECT_0, SPELL_EFFECT_SUMMON);
+    }
+};
+
+class spell_dream_vision_aura : public AuraScript
+{
+    PrepareAuraScript(spell_dream_vision_aura);
+
+    void HandleAuraApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        PreventDefaultAction();
+        if (Player* player = GetTarget()->ToPlayer())
+        {
+            player->UnsummonPetTemporaryIfAny();
+        }
+    }
+
+    void HandleAuraRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        if (Player* player = GetTarget()->ToPlayer())
+        {
+            if (Unit* charm = player->GetCharm())
+                charm->ToTempSummon()->UnSummon();
+
+            player->ResummonPetTemporaryUnSummonedIfAny();
+        }
+    }
+
+    void Register() override
+    {
+        OnEffectApply += AuraEffectApplyFn(spell_dream_vision_aura::HandleAuraApply, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+        AfterEffectRemove += AuraEffectRemoveFn(spell_dream_vision_aura::HandleAuraRemove, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+    }
+};
+
 void AddSC_check_generic_spell_scripts()
 {
     RegisterSpellScript(spell_gen_select_target_dead);
     RegisterSpellScript(spell_gen_target_is_in_combat);
     RegisterSpellScript(spell_summon_raven_god);
+    RegisterSpellAndAuraScriptPair(spell_dream_vision, spell_dream_vision_aura);
 }
