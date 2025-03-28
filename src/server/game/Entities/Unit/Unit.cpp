@@ -3928,7 +3928,7 @@ void Unit::_UpdateAutoRepeatSpell()
     static uint32 const HUNTER_AUTOSHOOT = 75;
 
     // Check "realtime" interrupts
-    if ((IsPlayer() && ToPlayer()->isMoving()) || IsNonMeleeSpellCast(false, false, true, spellProto->Id == HUNTER_AUTOSHOOT))
+    if ((IsPlayer() && ToPlayer()->isMoving() && spellProto->Id != HUNTER_AUTOSHOOT) || IsNonMeleeSpellCast(false, false, true, spellProto->Id == HUNTER_AUTOSHOOT))
     {
         // cancel wand shoot
         if (spellProto->Id != HUNTER_AUTOSHOOT)
@@ -3937,7 +3937,8 @@ void Unit::_UpdateAutoRepeatSpell()
         return;
     }
 
-    if (m_AutoRepeatFirstCast && getAttackTimer(RANGED_ATTACK) < 500)
+    // Apply delay (Hunter's autoshoot not affected)
+    if (m_AutoRepeatFirstCast && getAttackTimer(RANGED_ATTACK) < 500 && spellProto->Id != HUNTER_AUTOSHOOT)
     {
         setAttackTimer(RANGED_ATTACK, 500);
     }
@@ -8412,37 +8413,25 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
                     if (!procSpell || !IsPlayer() || !victim)
                         return false;
 
+                    uint32 spell = 45284;
+
+                    // chain lightning only procs 1/3 of the time
+                    if (procSpell->SpellFamilyFlags[0] & 0x2)
+                    {
+                        if (!roll_chance_i(33))
+                            return false;
+                        spell = 45297;
+                    }
+
                     if (procEx & PROC_EX_CRITICAL_HIT)
                         damage /= 2;
 
-                    // do not proc off from itself
-                    if (procSpell->Id == 45297 || procSpell->Id == 45284)
-                    {
-                        return false;
-                    }
+                    // do not reduce damage-spells have correct basepoints
+                    damage /= 2;
+                    int32 dmg = damage;
 
-                    do
-                    {
-                        uint32 spell = 0;
-
-                        if (procSpell->SpellFamilyFlags[0] & 0x2)
-                        {
-                            // 1/3 of 33% if 11%
-                            if (!roll_chance_i(33))
-                                return false;
-
-                            spell = 45297;
-                        }
-                        else
-                            spell = 45284;
-
-                        // do not reduce damage-spells have correct basepoints
-                        damage /= 2;
-                        int32 dmg = damage;
-
-                        // Cast
-                        CastCustomSpell(victim, spell, &dmg, 0, 0, true, castItem, triggeredByAura);
-                    } while (roll_chance_i(33));
+                    // Cast
+                    CastCustomSpell(victim, spell, &dmg, 0, 0, true, castItem, triggeredByAura);
                     return true;
                 }
                 // Static Shock
@@ -20468,10 +20457,10 @@ void Unit::PetSpellFail(SpellInfo const* spellInfo, Unit* target, uint32 result)
     }
 }
 
-int32 Unit::CalculateAOEDamageReduction(int32 damage, uint32 schoolMask, Unit* caster) const
+int32 Unit::CalculateAOEDamageReduction(int32 damage, uint32 schoolMask, bool npcCaster) const
 {
     damage = int32(float(damage) * GetTotalAuraMultiplierByMiscMask(SPELL_AURA_MOD_AOE_DAMAGE_AVOIDANCE, schoolMask));
-    if (caster && caster->IsCreature())
+    if (npcCaster)
         damage = int32(float(damage) * GetTotalAuraMultiplierByMiscMask(SPELL_AURA_MOD_CREATURE_AOE_DAMAGE_AVOIDANCE, schoolMask));
 
     return damage;
