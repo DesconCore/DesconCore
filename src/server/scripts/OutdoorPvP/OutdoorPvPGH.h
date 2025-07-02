@@ -33,6 +33,7 @@ enum OutdoorPvPGHenum
 
     QUEST_KEEP_THEM_AT_BAY_A            = 12316,
     QUEST_KEEP_THEM_AT_BAY_H            = 12317,
+
     SPELL_RESURRECTION_SICKNESS         = 15007,
     SPELL_VENTURE_PVP_MASTER            = 50857
 };

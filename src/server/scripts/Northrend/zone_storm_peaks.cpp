@@ -15,6 +15,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AreaDefines.h"
 #include "CombatAI.h"
 #include "CreatureScript.h"
 #include "Player.h"
@@ -27,7 +28,6 @@
 #include "Vehicle.h"
 #include "WaypointMgr.h"
 
-// Ours
 enum qSniffing
 {
     SPELL_SUMMON_PURSUERS_PERIODIC          = 54993,
@@ -677,7 +677,6 @@ class spell_q13007_iron_colossus : public SpellScript
     }
 };
 
-// Theirs
 /*######
 ## npc_roxi_ramrocket
 ######*/
@@ -803,7 +802,7 @@ enum FreedProtoDrake
 
     AREA_VALLEY_OF_ANCIENT_WINTERS      = 4437,
 
-    TEXT_EMOTE                          = 1,
+    TEXT_EMOTE                          = 0,
 
     SPELL_KILL_CREDIT_PRISONER          = 55144,
     SPELL_SUMMON_LIBERATED              = 55073,

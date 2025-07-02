@@ -62,7 +62,6 @@ class spell_q10935_the_exorcism_of_colonel_jules : public SpellScript
     }
 };
 
-// Theirs
 /*######
 ## npc_aeranas
 ######*/
@@ -667,14 +666,11 @@ void AddSC_hellfire_peninsula()
     new spell_q10935_the_exorcism_of_colonel_jules();
     RegisterSpellScript(spell_q10369_fury_of_the_dreghood_elders);
     RegisterSpellScript(spell_q10935_the_exorcism_of_colonel_jules);
-
-    // Theirs
     new npc_aeranas();
     new npc_ancestral_wolf();
     new npc_wounded_blood_elf();
     new npc_fel_guard_hound();
     new go_beacon();
-
     RegisterCreatureAI(npc_magister_aledis);
     RegisterGameObjectAI(go_magtheridons_head);
 }
