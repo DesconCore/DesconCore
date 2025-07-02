@@ -800,8 +800,6 @@ enum FreedProtoDrake
 {
     NPC_DRAKE                           = 29709,
 
-    AREA_VALLEY_OF_ANCIENT_WINTERS      = 4437,
-
     TEXT_EMOTE                          = 0,
 
     SPELL_KILL_CREDIT_PRISONER          = 55144,
