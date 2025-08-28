@@ -20,67 +20,7 @@
 #include "SpellAuraEffects.h"
 #include "SpellInfo.h"
 #include "SpellScript.h"
-
-enum Texts
-{
-    TEXT_EMOTE                               = 0,
-    TEXT_FROSTBROOD                          = 1,
-    TEXT_WYRMREST                            = 3
-};
-
-enum Spells
-{
-    SPELL_WARNING_WYRMREST                   = 50065,
-    SPELL_WARNING_GRYPHON                    = 48366,
-    SPELL_WARNING_FLAMEBRINGER               = 48694,
-    SPELL_BOUNDARY_WARNING                   = 51272,
-    SPELL_BOUNDARY_WARNING_2                 = 51259,
-    SPELL_BOUNDARY_WARNING_3                 = 56966
-};
-
-enum Ground
-{
-    ONSLAUGHT_HARBOR                         = 4417,
-    VOLDRUNE                                 = 4207,
-    WINTERGARDE_KEEP                         = 4177,
-    WINTERGARDE_MINE                         = 4178,
-    THE_CARRION_FIELDS                       = 4188,
-    THE_DRAGON_WASTES                        = 4254,
-    PATH_OF_THE_TITANS                       = 4184,
-    AZURE_DRAGONSHRINE                       = 4183,
-    THE_MIRROR_OF_DAWN                       = 4176,
-    WYRMREST_TEMPLE                          = 4161,
-    DUN_NIFFELEM                             = 4438,
-    VALLEY_OF_ANCIENT_WINTERS                = 4437,
-    BRUNNHILDAR_VILLAGE                      = 4422,
-    THE_PIT_OF_THE_FANG                      = 4535,
-    THE_ARGENT_VANGUARD                      = 4501,
-    VALLEY_OF_ECHOES                         = 4504,
-    THE_BREACH                               = 4505,
-    SCOURGEHOLME                             = 4506,
-    GALAKRONDS_REST                          = 4173,
-    THE_WICKED_COIL                          = 4174,
-    ICEMIST_VILLAGE                          = 4163,
-    DEATHS_BREACH                            = 4356,
-    HAVENSHIRE                               = 4347,
-    HAVENSHIRE_STABLES                       = 4350,
-    HAVENSHIRE_LUMBER_MIL                    = 4349,
-    HAVENSHIRE_FARMS                         = 4348,
-    CRYPT_OF_REMEMBRANCE                     = 4355,
-    NEW_AVALON                               = 4343,
-    NEW_AVALON_FORGE                         = 4377,
-    THE_SHADOW_VAULT                         = 4477,
-    WEEPING_QUARRY                           = 4517
-
-};
-
-enum Zone
-{
-    ICECROWN                                 = 210,
-    SHOLAZAR_BASIN                           = 3711,
-    THE_STORM_PEAKS                          = 67,
-    ICECROWN_CIDADEL                         = 4812
-};
+#include "area_limitation.h"
 
 class spell_wyrmrest_defender_mount : public AuraScript
 {
@@ -94,13 +34,12 @@ public:
 
     bool AreaCheck(Unit* target)
     {
-        return target->GetAreaId() == THE_DRAGON_WASTES || target->GetAreaId() == PATH_OF_THE_TITANS || target->GetAreaId() == AZURE_DRAGONSHRINE ||
-               target->GetAreaId() == THE_MIRROR_OF_DAWN || target->GetAreaId() == WYRMREST_TEMPLE;
+        return target && RestrictedAreasWyrmrestDefenderMount.count(target->GetAreaId());
     }
 
     bool Load() override
     {
-        return GetUnitOwner()->GetTypeId() == TYPEID_PLAYER;
+        return GetUnitOwner()->IsPlayer();
     }
 
     void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -109,21 +48,11 @@ public:
         if (!owner)
             return;
 
-        switch (owner->GetAreaId())
-        {
-            case THE_DRAGON_WASTES:
-            case PATH_OF_THE_TITANS:
-            case AZURE_DRAGONSHRINE:
-            case THE_MIRROR_OF_DAWN:
-            case WYRMREST_TEMPLE:
-                owner->RemoveAura(SPELL_WARNING_WYRMREST);
-                break;
-        }
+        if (RestrictedAreasWyrmrestDefenderMount.count(owner->GetAreaId()))
+            owner->RemoveAura(SPELL_WARNING_WYRMREST);
 
-        if (owner->GetVehicleCreatureBase())
-            return;
-
-        owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
+        if (!owner->GetVehicleCreatureBase())
+            owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -157,12 +86,12 @@ public:
 
     bool CheckArea(Unit* target)
     {
-        return target->GetAreaId() == WINTERGARDE_KEEP || target->GetAreaId() == WINTERGARDE_MINE || target->GetAreaId() == THE_CARRION_FIELDS;
+        return target && RestrictedAreasWintergardeGryphonCommander.count(target->GetAreaId());
     }
 
     bool Load() override
     {
-        return GetUnitOwner()->GetTypeId() == TYPEID_PLAYER;
+        return GetUnitOwner()->IsPlayer();
     }
 
     void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -171,19 +100,11 @@ public:
         if (!owner)
             return;
 
-        switch (owner->GetAreaId())
-        {
-            case WINTERGARDE_KEEP:
-            case WINTERGARDE_MINE:
-            case THE_CARRION_FIELDS:
-                owner->RemoveAura(SPELL_WARNING_GRYPHON);
-                break;
-        }
+        if (RestrictedAreasWintergardeGryphonCommander.count(owner->GetAreaId()))
+            owner->RemoveAura(SPELL_WARNING_GRYPHON);
 
-        if (owner->GetVehicleCreatureBase())
-            return;
-
-        owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
+        if (!owner->GetVehicleCreatureBase())
+            owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -216,12 +137,12 @@ public:
 
     bool CheckArea(Unit* target)
     {
-        return target->GetAreaId() != VOLDRUNE;
+        return target && target->GetAreaId() != RestrictedAreaFlamebringer;
     }
 
     bool Load() override
     {
-        return GetUnitOwner()->GetTypeId() == TYPEID_PLAYER;
+        return GetUnitOwner()->IsPlayer();
     }
 
     void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -238,7 +159,10 @@ public:
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
     {
         Unit* owner = GetUnitOwner();
-        if (owner->GetAreaId() == VOLDRUNE)
+        if (!owner)
+            return;
+
+        if (owner->GetAreaId() == RestrictedAreaFlamebringer)
             owner->RemoveAura(SPELL_WARNING_FLAMEBRINGER);
     }
 
@@ -262,12 +186,13 @@ public:
 
     bool CheckArea(Unit* target)
     {
-        return target->GetAreaId() == ONSLAUGHT_HARBOR;
+        return target && target->GetAreaId() == RestrictedAreaOnslaughtHarbor;
     }
 
     bool Load() override
     {
-        return GetUnitOwner()->GetTypeId() == TYPEID_PLAYER;
+        Unit* owner = GetUnitOwner();
+        return owner && owner->GetTypeId() == TYPEID_PLAYER;
     }
 
     void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -276,13 +201,11 @@ public:
         if (!owner)
             return;
 
-        if (owner->GetAreaId() == ONSLAUGHT_HARBOR)
+        if (owner->GetAreaId() == RestrictedAreaOnslaughtHarbor)
             owner->RemoveAura(SPELL_BOUNDARY_WARNING);
 
-        if (owner->GetVehicleCreatureBase())
-            return;
-
-        owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
+        if (!owner->GetVehicleCreatureBase())
+            owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -316,12 +239,12 @@ public:
 
     bool CheckZone(Unit* target)
     {
-        return target->GetZoneId() == ICECROWN;
+        return target && target->GetZoneId() == RestrictedZoneOnslaughtGryphon;
     }
 
     bool Load() override
     {
-        return GetUnitOwner()->GetTypeId() == TYPEID_PLAYER;
+        return GetUnitOwner()->IsPlayer();
     }
 
     void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -330,13 +253,11 @@ public:
         if (!owner)
             return;
 
-        if (owner->GetZoneId() == ICECROWN)
+        if (owner->GetZoneId() == RestrictedZoneOnslaughtGryphon)
             owner->RemoveAura(SPELL_BOUNDARY_WARNING);
 
-        if (owner->GetVehicleCreatureBase())
-            return;
-
-        owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
+        if (!owner->GetVehicleCreatureBase())
+            owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -370,13 +291,12 @@ public:
 
     bool AreaCheck(Unit* target)
     {
-        return target->GetAreaId() != DUN_NIFFELEM && target->GetAreaId() != VALLEY_OF_ANCIENT_WINTERS && target->GetAreaId() != BRUNNHILDAR_VILLAGE &&
-               target->GetAreaId() != THE_PIT_OF_THE_FANG;
+        return target && !RestrictedAreasRideFreedProtoDrake.contains(target->GetAreaId());
     }
 
     bool Load() override
     {
-        return GetUnitOwner()->GetTypeId() == TYPEID_PLAYER;
+        return GetUnitOwner()->IsPlayer();
     }
 
     void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -393,15 +313,8 @@ public:
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
     {
         Unit* owner = GetUnitOwner();
-        switch (owner->GetAreaId())
-        {
-            case DUN_NIFFELEM:
-            case VALLEY_OF_ANCIENT_WINTERS:
-            case BRUNNHILDAR_VILLAGE:
-            case THE_PIT_OF_THE_FANG:
-                owner->RemoveAura(SPELL_BOUNDARY_WARNING_2);
-                break;
-        }
+        if (RestrictedAreasRideFreedProtoDrake.count(owner->GetAreaId()))
+            owner->RemoveAura(SPELL_BOUNDARY_WARNING_2);
     }
 
     void Register() override
@@ -417,20 +330,19 @@ class spell_command_argent_skytalon : public AuraScript
 public:
     PrepareAuraScript(spell_command_argent_skytalon);
 
-    bool Validate(SpellInfo const* /*SpellInfo*/) override
+    bool Validate(SpellInfo const* /*spellInfo*/) override
     {
         return ValidateSpellInfo({ SPELL_BOUNDARY_WARNING });
     }
 
     bool AreaCheck(Unit* target)
     {
-        return target->GetAreaId() == THE_ARGENT_VANGUARD || target->GetAreaId() == VALLEY_OF_ECHOES || target->GetAreaId() == THE_BREACH ||
-               target->GetAreaId() == SCOURGEHOLME;
+        return target && RestrictedAreasArgentSkytalon.contains(target->GetAreaId());
     }
 
     bool Load() override
     {
-        return GetUnitOwner()->GetTypeId() == TYPEID_PLAYER;
+        return GetUnitOwner()->IsPlayer();
     }
 
     void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -439,30 +351,26 @@ public:
         if (!owner)
             return;
 
-        switch (owner->GetAreaId())
-        {
-            case THE_ARGENT_VANGUARD:
-            case VALLEY_OF_ECHOES:
-            case THE_BREACH:
-            case SCOURGEHOLME:
-                owner->RemoveAura(SPELL_BOUNDARY_WARNING);
-                break;
-        }
+        if (RestrictedAreasArgentSkytalon.count(owner->GetAreaId()))
+            owner->RemoveAura(SPELL_BOUNDARY_WARNING);
 
-        if (owner->GetVehicleCreatureBase())
-            return;
-
-        owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
+        if (!owner->GetVehicleCreatureBase())
+            owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
     {
         Unit* owner = GetUnitOwner();
-        if (Creature* sytalon = owner->GetVehicleCreatureBase())
+        if (!owner)
+            return;
+
+        if (Creature* skytalon = owner->GetVehicleCreatureBase())
         {
-            Player* target = owner->ToPlayer();
-            sCreatureTextMgr->SendChat(sytalon, TEXT_EMOTE, owner, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
-            owner->CastSpell(owner, SPELL_BOUNDARY_WARNING, true);
+            if (Player* player = owner->ToPlayer())
+            {
+                sCreatureTextMgr->SendChat(skytalon, TEXT_EMOTE, owner, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, player);
+                owner->CastSpell(owner, SPELL_BOUNDARY_WARNING, true);
+            }
         }
     }
 
@@ -479,20 +387,19 @@ class spell_wyrmrest_commander : public AuraScript
 public:
     PrepareAuraScript(spell_wyrmrest_commander);
 
-    bool Validate(SpellInfo const* /*SpellInfo*/) override
+    bool Validate(SpellInfo const* /*spellInfo*/) override
     {
         return ValidateSpellInfo({ SPELL_BOUNDARY_WARNING });
     }
 
     bool AreaCheck(Unit* target)
     {
-        return target->GetAreaId() == WYRMREST_TEMPLE || target->GetAreaId() == THE_DRAGON_WASTES || target->GetAreaId() == GALAKRONDS_REST ||
-               target->GetAreaId() == THE_WICKED_COIL || target->GetAreaId() == PATH_OF_THE_TITANS;
+        return target && RestrictedAreasWyrmrestCommander.contains(target->GetAreaId());
     }
 
     bool Load() override
     {
-        return GetUnitOwner()->GetTypeId() == TYPEID_PLAYER;
+        return GetUnitOwner()->IsPlayer();
     }
 
     void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -501,31 +408,26 @@ public:
         if (!owner)
             return;
 
-        switch (owner->GetAreaId())
-        {
-            case WYRMREST_TEMPLE:
-            case THE_DRAGON_WASTES:
-            case GALAKRONDS_REST:
-            case THE_WICKED_COIL:
-            case PATH_OF_THE_TITANS:
-                owner->RemoveAurasDueToSpell(SPELL_BOUNDARY_WARNING);
-                break;
-        }
+        if (RestrictedAreasWyrmrestCommander.count(owner->GetAreaId()))
+            owner->RemoveAurasDueToSpell(SPELL_BOUNDARY_WARNING);
 
-        if (owner->GetVehicleCreatureBase())
-            return;
-
-        owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
+        if (!owner->GetVehicleCreatureBase())
+            owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
     {
         Unit* owner = GetUnitOwner();
+        if (!owner)
+            return;
+
         if (Creature* wyrmrest = owner->GetVehicleCreatureBase())
         {
-            Player* target = owner->ToPlayer();
-            sCreatureTextMgr->SendChat(wyrmrest, TEXT_WYRMREST, owner, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
-            owner->CastSpell(owner, SPELL_BOUNDARY_WARNING, true);
+            if (Player* player = owner->ToPlayer())
+            {
+                sCreatureTextMgr->SendChat(wyrmrest, TEXT_WYRMREST, owner, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, player);
+                owner->CastSpell(owner, SPELL_BOUNDARY_WARNING, true);
+            }
         }
     }
 
@@ -542,19 +444,19 @@ class spell_korkron_wing_commander : public AuraScript
 public:
     PrepareAuraScript(spell_korkron_wing_commander);
 
-    bool Validate(SpellInfo const* /*SpellInfo*/) override
+    bool Validate(SpellInfo const* /*spellInfo*/) override
     {
         return ValidateSpellInfo({ SPELL_BOUNDARY_WARNING });
     }
 
     bool AreaCheck(Unit* target)
     {
-        return target->GetAreaId() == ICEMIST_VILLAGE;
+        return target && RestrictedAreaKorkronWingCommander.contains(target->GetAreaId());
     }
 
     bool Load() override
     {
-        return GetUnitOwner()->GetTypeId() == TYPEID_PLAYER;
+        return GetUnitOwner()->IsPlayer();
     }
 
     void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -563,23 +465,26 @@ public:
         if (!owner)
             return;
 
-        if (owner->GetAreaId() == ICEMIST_VILLAGE)
+        if (RestrictedAreaKorkronWingCommander.count(owner->GetAreaId()))
             owner->RemoveAura(SPELL_BOUNDARY_WARNING);
 
-        if (owner->GetVehicleCreatureBase())
-            return;
-
-        owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
+        if (!owner->GetVehicleCreatureBase())
+            owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
     {
         Unit* owner = GetUnitOwner();
+        if (!owner)
+            return;
+
         if (Creature* korkron = owner->GetVehicleCreatureBase())
         {
-            Player* target = owner->ToPlayer();
-            sCreatureTextMgr->SendChat(korkron, TEXT_EMOTE, owner, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
-            owner->CastSpell(owner, SPELL_BOUNDARY_WARNING, true);
+            if (Player* player = owner->ToPlayer())
+            {
+                sCreatureTextMgr->SendChat(korkron, TEXT_EMOTE, owner, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, player);
+                owner->CastSpell(owner, SPELL_BOUNDARY_WARNING, true);
+            }
         }
     }
 
@@ -596,21 +501,19 @@ class spell_frostbrood_vanquisher : public AuraScript
 public:
     PrepareAuraScript(spell_frostbrood_vanquisher);
 
-    bool Validate(SpellInfo const* /*SpellInfo*/) override
+    bool Validate(SpellInfo const* /*spellInfo*/) override
     {
         return ValidateSpellInfo({ SPELL_BOUNDARY_WARNING });
     }
 
     bool AreaCheck(Unit* target)
     {
-        return target->GetAreaId() == DEATHS_BREACH || target->GetAreaId() == HAVENSHIRE || target->GetAreaId() == HAVENSHIRE_STABLES ||
-               target->GetAreaId() == HAVENSHIRE_LUMBER_MIL || target->GetAreaId() == HAVENSHIRE_FARMS || target->GetAreaId() == CRYPT_OF_REMEMBRANCE ||
-               target->GetAreaId() == NEW_AVALON || target->GetAreaId() == NEW_AVALON_FORGE;
+        return target && RestrictedAreaFrostbroodVanquisher.contains(target->GetAreaId());
     }
 
     bool Load() override
     {
-        return GetUnitOwner()->GetTypeId() == TYPEID_PLAYER;
+        return GetUnitOwner()->IsPlayer();
     }
 
     void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -619,34 +522,26 @@ public:
         if (!owner)
             return;
 
-        switch (owner->GetAreaId())
-        {
-            case DEATHS_BREACH:
-            case HAVENSHIRE:
-            case HAVENSHIRE_STABLES:
-            case HAVENSHIRE_LUMBER_MIL:
-            case HAVENSHIRE_FARMS:
-            case CRYPT_OF_REMEMBRANCE:
-            case NEW_AVALON:
-            case NEW_AVALON_FORGE:
-                owner->RemoveAura(SPELL_BOUNDARY_WARNING);
-                break;
-        }
+        if (RestrictedAreaFrostbroodVanquisher.count(owner->GetAreaId()))
+            owner->RemoveAura(SPELL_BOUNDARY_WARNING);
 
-        if (owner->GetVehicleCreatureBase())
-            return;
-
-        owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
+        if (!owner->GetVehicleCreatureBase())
+            owner->RemoveAurasDueToSpell(GetSpellInfo()->Id);
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
     {
         Unit* owner = GetUnitOwner();
-        if (Creature* Vanquisher = owner->GetVehicleCreatureBase())
+        if (!owner)
+            return;
+
+        if (Creature* vanquisher = owner->GetVehicleCreatureBase())
         {
-            Player* target = owner->ToPlayer();
-            sCreatureTextMgr->SendChat(Vanquisher, TEXT_FROSTBROOD, owner, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
-            owner->CastSpell(owner, SPELL_BOUNDARY_WARNING, true);
+            if (Player* player = owner->ToPlayer())
+            {
+                sCreatureTextMgr->SendChat(vanquisher, TEXT_FROSTBROOD, owner, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, player);
+                owner->CastSpell(owner, SPELL_BOUNDARY_WARNING, true);
+            }
         }
     }
 
@@ -663,44 +558,52 @@ class spell_ride_vehicle_hardcoded : public AuraScript
 public:
     PrepareAuraScript(spell_ride_vehicle_hardcoded);
 
-    bool Validate(SpellInfo const* /*SpellInfo*/) override
+    bool Validate(SpellInfo const* /*spellInfo*/) override
     {
         return ValidateSpellInfo({ SPELL_BOUNDARY_WARNING_3 });
     }
 
     bool CheckArea(Unit* target)
     {
-        return target->GetAreaId() != THE_SHADOW_VAULT && target->GetAreaId() != WEEPING_QUARRY;
+        return target && !RestrictedAreasRideVehicleHardcoded.count(target->GetAreaId());
     }
 
     bool CheckZone(Unit* target)
     {
-        return target->GetZoneId() != SHOLAZAR_BASIN && target->GetZoneId() != THE_STORM_PEAKS && target->GetZoneId() != ICECROWN_CIDADEL;
+        return target && !RestrictedZonesRideVehicleHardcoded.count(target->GetZoneId());
     }
 
     bool Load() override
     {
-        return GetUnitOwner()->GetTypeId() == TYPEID_PLAYER;
+        return GetUnitOwner()->IsPlayer();
     }
 
     void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
     {
         Unit* owner = GetUnitOwner();
-        if (Creature* soo = owner->GetVehicleCreatureBase())
+        if (!owner)
+            return;
+
+        if (Creature* vehicle = owner->GetVehicleCreatureBase())
         {
-            Player* target = owner->ToPlayer();
-            sCreatureTextMgr->SendChat(soo, TEXT_EMOTE, owner, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, target);
-            owner->CastSpell(owner, SPELL_BOUNDARY_WARNING_3, true);
+            if (Player* player = owner->ToPlayer())
+            {
+                sCreatureTextMgr->SendChat(vehicle, TEXT_EMOTE, owner, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_NORMAL, 0, TEAM_NEUTRAL, false, player);
+                owner->CastSpell(owner, SPELL_BOUNDARY_WARNING_3, true);
+            }
         }
     }
 
     void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
     {
         Unit* owner = GetUnitOwner();
-        uint32 areaId = owner->GetAreaId();
-        uint32 zoneId = owner->GetZoneId();
+        if (!owner)
+            return;
 
-        if (areaId == THE_SHADOW_VAULT || areaId == WEEPING_QUARRY || zoneId == SHOLAZAR_BASIN)
+        const uint32 areaId = owner->GetAreaId();
+        const uint32 zoneId = owner->GetZoneId();
+
+        if (RestrictedAreasRideVehicleHardcoded.count(areaId) || RestrictedZonesRideVehicleHardcoded.count(zoneId))
         {
             owner->RemoveAura(SPELL_BOUNDARY_WARNING_3);
         }
